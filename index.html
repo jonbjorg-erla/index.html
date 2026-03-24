@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)file:///Users/jonbjorgkristjansdottir/Downloads/index.html -->
+<html lang="is"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birtingarplön — Essence Mediacom</title>
+<script>
+// Inline Chart.js replacement — SVG based, no external dependencies
+const Chart = (function(){
+  'use strict';
+  const ns = 'http://www.w3.org/2000/svg';
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(ns, tag);
+    Object.entries(attrs||{}).forEach(([k,v]) => e.setAttribute(k, String(v)));
+    return e;
+  };
+  const txt = (content) => document.createTextNode(String(content));
+  const fv = (v) => {
+    if(v == null) return '';
+    if(Math.abs(v) >= 1000000) return (v/1000000).toFixed(1)+'M';
+    if(Math.abs(v) >= 1000) return (v/1000).toFixed(0)+'k';
+    return (v % 1 === 0) ? String(v) : v.toFixed(1);
+  };
+
+  function getRange(datasets, yMin, yMax) {
+    const vals = datasets.flatMap(d => (d.data||[]).filter(v => v != null));
+    if(!vals.length) return {min:0, max:100};
+    const mn = yMin != null ? yMin : Math.max(0, Math.min(...vals) * 0.92);
+    const mx = yMax != null ? yMax : Math.max(...vals) * 1.08 || 100;
+    return {min: mn, max: mx || 1};
+  }
+
+  function makeSVG(w, h) {
+    const s = el('svg', {width:w, height:h, xmlns:ns});
+    return s;
+  }
+
+  function drawBar(canvas, cfg) {
+    const w = canvas.clientWidth || 600;
+    const h = canvas.clientHeight || 240;
+    const horiz = cfg.options?.indexAxis === 'y';
+    const PL = horiz ? 185 : 52, PR = 22, PT = 22, PB = horiz ? 28 : 50;
+    const pw = w - PL - PR, ph = h - PT - PB;
+    const labels = cfg.data.labels || [];
+    const datasets = cfg.data.datasets || [];
+    const ds = datasets.length;
+    const n = labels.length || 1;
+    const yOpts = cfg.options?.scales?.y || {};
+    const xOpts = cfg.options?.scales?.x || {};
+    const range = horiz ? getRange(datasets, xOpts.min, xOpts.max) : getRange(datasets, yOpts.min, yOpts.max);
+    const {min, max} = range;
+    const svg = makeSVG(w, h);
+    canvas.innerHTML = '';
+    canvas.appendChild(svg);
+
+    const TICK = '#9a9b9f';
+    const GRID = 'rgba(255,255,255,0.06)';
+
+    if (!horiz) {
+      // Vertical bars
+      for(let i = 0; i <= 4; i++) {
+        const v = min + (max - min) * i / 4;
+        const y = PT + ph - ph * (v - min) / (max - min);
+        const line = el('line', {x1:PL, y1:y, x2:PL+pw, y2:y, stroke:GRID, 'stroke-width':'0.5'});
+        svg.appendChild(line);
+        const t = el('text', {'text-anchor':'end', x:PL-5, y:y+3, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+        t.appendChild(txt(fv(v)));
+        svg.appendChild(t);
+      }
+      const skip = Math.ceil(n / 12);
+      labels.forEach((lbl, i) => {
+        if(i % skip !== 0 && i !== n-1) return;
+        const x = PL + pw * (i + 0.5) / n;
+        const t = el('text', {'text-anchor':'middle', x, y:h-4, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+        t.appendChild(txt(String(lbl).replace('
+',' ').slice(0,16)));
+        svg.appendChild(t);
+      });
+      const bw = Math.max(3, pw / n * 0.7 / ds);
+      datasets.forEach((d, di) => {
+        (d.data||[]).forEach((v, i) => {
+          if(v == null) return;
+          const x = PL + pw * (i + 0.5) / n + (di - ds/2 + 0.5) * bw;
+          const bh = Math.max(1, ph * (v - min) / (max - min));
+          const y = PT + ph - bh;
+          const col = Array.isArray(d.backgroundColor) ? d.backgroundColor[i] : (d.backgroundColor || '#888');
+          const bc = Array.isArray(d.borderColor) ? d.borderColor[i] : (d.borderColor || col);
+          const r = el('rect', {x:x-bw/2, y, width:bw, height:bh, fill:col, stroke:bc, 'stroke-width':'0.5', rx:'2'});
+          svg.appendChild(r);
+        });
+      });
+      if(ds > 1 && cfg.options?.plugins?.legend?.display !== false) {
+        let lx = PL;
+        datasets.forEach(d => {
+          const col = Array.isArray(d.borderColor) ? d.borderColor[0] : (d.borderColor || '#888');
+          svg.appendChild(el('rect', {x:lx, y:5, width:10, height:8, fill:col}));
+          const t = el('text', {x:lx+13, y:13, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+          t.appendChild(txt(d.label||''));
+          svg.appendChild(t);
+          lx += Math.min((d.label||'').length, 20) * 5.5 + 24;
+          if(lx > w - 60) lx = PL;
+        });
+      }
+    } else {
+      // Horizontal bars
+      for(let i = 0; i <= 4; i++) {
+        const v = min + (max - min) * i / 4;
+        const x = PL + pw * (v - min) / (max - min);
+        svg.appendChild(el('line', {x1:x, y1:PT, x2:x, y2:PT+ph, stroke:GRID, 'stroke-width':'0.5'}));
+        const t = el('text', {'text-anchor':'middle', x, y:h-3, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+        t.appendChild(txt(fv(v)));
+        svg.appendChild(t);
+      }
+      const bh = Math.max(3, ph / n * 0.6 / ds);
+      labels.forEach((lbl, i) => {
+        const cy = PT + ph * (i + 0.5) / n;
+        const t = el('text', {'text-anchor':'end', x:PL-5, y:cy+3, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+        t.appendChild(txt(String(lbl).slice(0,26)));
+        svg.appendChild(t);
+        datasets.forEach((d, di) => {
+          const v = (d.data||[])[i]; if(v == null) return;
+          const bw = Math.max(1, pw * (v - min) / (max - min));
+          const by = cy + (di - ds/2 + 0.5) * bh;
+          const col = Array.isArray(d.backgroundColor) ? d.backgroundColor[i] : (d.backgroundColor||'#888');
+          const bc = Array.isArray(d.borderColor) ? d.borderColor[i] : (d.borderColor||col);
+          svg.appendChild(el('rect', {x:PL, y:by-bh/2, width:bw, height:bh, fill:col, stroke:bc, 'stroke-width':'0.5', rx:'2'}));
+          const vt = el('text', {x:PL+bw+3, y:by+3, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+          vt.appendChild(txt(fv(v)));
+          svg.appendChild(vt);
+        });
+      });
+    }
+  }
+
+  function drawLine(canvas, cfg) {
+    const w = canvas.clientWidth || 600;
+    const h = canvas.clientHeight || 240;
+    const PL = 52, PR = 22, PT = 22, PB = 50;
+    const pw = w - PL - PR, ph = h - PT - PB;
+    const labels = cfg.data.labels || [];
+    const datasets = cfg.data.datasets || [];
+    const n = labels.length - 1 || 1;
+    const yOpts = cfg.options?.scales?.y || {};
+    const {min, max} = getRange(datasets, yOpts.min, yOpts.max);
+    const svg = makeSVG(w, h);
+    canvas.innerHTML = '';
+    canvas.appendChild(svg);
+    const TICK = '#9a9b9f';
+    const GRID = 'rgba(255,255,255,0.06)';
+
+    for(let i = 0; i <= 4; i++) {
+      const v = min + (max - min) * i / 4;
+      const y = PT + ph - ph * (v - min) / (max - min);
+      svg.appendChild(el('line', {x1:PL, y1:y, x2:PL+pw, y2:y, stroke:GRID, 'stroke-width':'0.5'}));
+      const t = el('text', {'text-anchor':'end', x:PL-5, y:y+3, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+      t.appendChild(txt(fv(v)));
+      svg.appendChild(t);
+    }
+    const skip = Math.ceil(labels.length / 10);
+    labels.forEach((lbl, i) => {
+      if(i % skip !== 0 && i !== labels.length-1) return;
+      const x = PL + pw * (i / n);
+      const t = el('text', {'text-anchor':'middle', x, y:h-4, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+      t.appendChild(txt(String(lbl)));
+      svg.appendChild(t);
+    });
+
+    datasets.forEach(d => {
+      const pts = (d.data||[]).map((v, i) => v != null ? [PL + pw*(i/n), PT + ph - ph*(v-min)/(max-min)] : null);
+      if(d.fill && d.backgroundColor && d.backgroundColor !== 'transparent') {
+        const fp = pts.filter(Boolean);
+        if(fp.length > 1) {
+          const points = [...fp, [fp[fp.length-1][0], PT+ph], [fp[0][0], PT+ph]];
+          svg.appendChild(el('polygon', {points: points.map(p=>p.join(',')).join(' '), fill: d.backgroundColor, stroke:'none'}));
+        }
+      }
+      let seg = [];
+      const flush = () => {
+        if(seg.length > 1) {
+          const col = d.borderColor || '#888';
+          svg.appendChild(el('polyline', {points: seg.map(p=>p.join(',')).join(' '), stroke:col, fill:'none', 'stroke-width':d.borderWidth||2, 'stroke-linejoin':'round'}));
+        }
+        seg = [];
+      };
+      pts.forEach(p => { if(p) seg.push(p); else flush(); });
+      flush();
+      const pr = d.pointRadius != null ? d.pointRadius : 3;
+      if(pr > 0) pts.forEach(p => {
+        if(!p) return;
+        svg.appendChild(el('circle', {cx:p[0], cy:p[1], r:pr, fill:d.borderColor||'#888'}));
+      });
+    });
+
+    if(cfg.options?.plugins?.legend?.display !== false && datasets.length > 1) {
+      let lx = PL;
+      datasets.forEach(d => {
+        const col = d.borderColor || '#888';
+        svg.appendChild(el('line', {x1:lx, y1:10, x2:lx+12, y2:10, stroke:col, 'stroke-width':'2'}));
+        const t = el('text', {x:lx+15, y:13, fill:TICK, 'font-size':'9', 'font-family':'monospace'});
+        t.appendChild(txt(d.label||''));
+        svg.appendChild(t);
+        lx += Math.min((d.label||'').length, 20) * 5.5 + 28;
+        if(lx > w - 80) lx = PL;
+      });
+    }
+  }
+
+  function drawDoughnut(canvas, cfg) {
+    const w = canvas.clientWidth || 300;
+    const h = canvas.clientHeight || 240;
+    const cx = w/2, cy = h/2, r = Math.min(w,h)/2 - 15;
+    const cutStr = cfg.options?.cutout || '60%';
+    const cut = cutStr.toString().includes('%') ? r * parseFloat(cutStr) / 100 : parseFloat(cutStr);
+    const data = cfg.data.datasets[0].data || [];
+    const colors = cfg.data.datasets[0].backgroundColor || [];
+    const total = data.reduce((a,b) => a+b, 0) || 1;
+    const svg = makeSVG(w, h);
+    canvas.innerHTML = '';
+    canvas.appendChild(svg);
+
+    let angle = -Math.PI/2;
+    data.forEach((v, i) => {
+      const sweep = 2 * Math.PI * v / total;
+      const ea = angle + sweep;
+      const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(ea), y2 = cy + r * Math.sin(ea);
+      const ix1 = cx + cut * Math.cos(ea), iy1 = cy + cut * Math.sin(ea);
+      const ix2 = cx + cut * Math.cos(angle), iy2 = cy + cut * Math.sin(angle);
+      const lg = sweep > Math.PI ? 1 : 0;
+      const path = `M${x1},${y1} A${r},${r} 0 ${lg},1 ${x2},${y2} L${ix1},${iy1} A${cut},${cut} 0 ${lg},0 ${ix2},${iy2} Z`;
+      const col = Array.isArray(colors) ? colors[i] : colors;
+      svg.appendChild(el('path', {d:path, fill:col||'#888', stroke:'#0e0f11', 'stroke-width':'2'}));
+      angle = ea;
+    });
+  }
+
+  const instances = {};
+  function ChartClass(elOrId, cfg) {
+    const canvas = typeof elOrId === 'string' ? $(elOrId) : elOrId;
+    if(!canvas) return;
+    this._canvas = canvas;
+    this._cfg = cfg;
+    if(canvas.id) instances[canvas.id] = this;
+    this._render();
+  }
+  ChartClass.prototype._render = function() {
+    const t = this._cfg.type;
+    const c = this._canvas;
+    if(!c) return;
+    if(t==='bar') drawBar(c, this._cfg);
+    else if(t==='line') drawLine(c, this._cfg);
+    else if(t==='doughnut'||t==='pie') drawDoughnut(c, this._cfg);
+  };
+  ChartClass.prototype.destroy = function() {
+    if(this._canvas) this._canvas.innerHTML = '';
+    if(this._canvas?.id) delete instances[this._canvas.id];
+  };
+  ChartClass.prototype.update = function() { this._render(); };
+
+  window.addEventListener('resize', () => {
+    Object.values(instances).forEach(c => { try { c._render(); } catch(e) {} });
+  });
+
+  return ChartClass;
+})();
+</script>
+<style>
+:root{
+  --bg:#0e0f11;--s1:#16181c;--s2:#1e2026;--s3:#262830;
+  --bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.14);
+  --t1:#f0f0ee;--t2:#9a9b9f;--t3:#4a4b50;
+  --ac:#c8f060;--ac2:#60d0f0;--ac3:#f0a060;--ac4:#d060f0;
+  --grn:#60f0a0;--red:#f06060;
+  --fb:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --fm:'SF Mono','Consolas','Courier New',monospace;
+  --r:10px;--rl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-box{background:var(--s1);border:1px solid var(--bd2);border-radius:20px;padding:2.5rem;width:400px;max-width:100%}
+.auth-logo{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ac);margin-bottom:.4rem}
+.auth-title{font-size:24px;font-weight:700;margin-bottom:.3rem}
+.auth-sub{font-size:13px;color:var(--t2);margin-bottom:1.75rem}
+.auth-err{background:rgba(240,96,96,.08);border:1px solid rgba(240,96,96,.2);border-radius:8px;padding:.625rem .875rem;font-size:12px;color:var(--red);margin-bottom:.875rem;display:none}
+.auth-btn{width:100%;padding:11px;background:var(--ac);color:#111;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;transition:opacity .12s;font-family:var(--fb)}
+.auth-btn:hover{opacity:.9}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* SHELL */
+.shell{display:none;min-height:100vh;flex-direction:row}
+.shell.show{display:flex}
+.sidebar{width:232px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{flex:1;min-width:0;overflow-x:hidden}
+
+/* SIDEBAR */
+.logo{padding:1.125rem 1.125rem .875rem;border-bottom:1px solid var(--bd)}
+.logo-mark{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ac);margin-bottom:1px;font-family:var(--fm)}
+.logo-sub{font-size:10px;color:var(--t3)}
+.nav-sec{padding:.5rem .75rem .2rem}
+.nav-lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:.25rem;font-family:var(--fm);padding:0 6px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;font-size:12.5px;color:var(--t2);cursor:pointer;transition:all .12s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:var(--fb)}
+.nav-item:hover{background:var(--s2);color:var(--t1)}
+.nav-item.active{background:var(--s3);color:var(--t1)}
+.nav-item.sub{padding-left:26px;font-size:12px}
+.nav-dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+.nav-count{margin-left:auto;font-size:10px;font-family:var(--fm);color:var(--t3);background:var(--s3);padding:1px 6px;border-radius:10px}
+
+.client-search{padding:.4rem .75rem}
+.client-search input{width:100%;padding:6px 9px;background:var(--s2);border:1px solid var(--bd2);border-radius:7px;color:var(--t1);font-size:12px;font-family:var(--fb)}
+.client-search input:focus{outline:none;border-color:var(--ac)}
+.client-list{padding:0 .5rem;flex:1;overflow-y:auto}
+.c-item{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:7px;cursor:pointer;transition:all .12s;margin-bottom:1px}
+.c-item:hover{background:var(--s2)}
+.c-item.active{background:var(--s3)}
+.c-av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#111}
+.c-inf{flex:1;min-width:0}
+.c-nm{font-size:12px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-mt{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new-client-btn{margin:.4rem .625rem .625rem;padding:7px;background:rgba(200,240,96,.1);border:1px solid rgba(200,240,96,.2);border-radius:7px;color:var(--ac);font-size:12px;cursor:pointer;text-align:center;transition:all .12s;font-family:var(--fb)}
+.new-client-btn:hover{background:rgba(200,240,96,.17)}
+.sfooter{padding:.75rem 1.125rem;border-top:1px solid var(--bd);font-size:10px;color:var(--t3)}
+.sfooter .user-email{color:var(--t2);font-size:11px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logout-btn{font-size:10px;color:var(--t3);background:none;border:none;cursor:pointer;padding:0;font-family:var(--fm)}
+.logout-btn:hover{color:var(--red)}
+
+/* PAGES */
+.page{display:none;padding:2rem 2.5rem;min-height:100vh}
+.page.active{display:block}
+.ph{margin-bottom:1.5rem}
+.ph h1{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-bottom:.25rem}
+.ph p{font-size:13px;color:var(--t2)}
+.hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.dbadge{font-size:10px;font-family:var(--fm);color:var(--ac);background:rgba(200,240,96,.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(200,240,96,.2);white-space:nowrap}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);padding:1.125rem 1.25rem;margin-bottom:.75rem}
+.card:last-child{margin-bottom:0}
+.stitle{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin-bottom:.625rem;font-family:var(--fm)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem}
+.mc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rl);padding:10px 13px}
+.mc-lbl{font-size:10px;color:var(--t3);margin-bottom:3px;font-family:var(--fm)}
+.mc-val{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.mc-sub{font-size:10px;color:var(--t2);margin-top:1px}
+.mc-ac .mc-val{color:var(--ac)}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* CHART WRAPPER */
+.cw{position:relative;width:100%}
+
+/* FORM */
+.fg{margin-bottom:.75rem}
+.fg label{display:block;font-size:10px;font-family:var(--fm);text-transform:uppercase;letter-spacing:.07em;color:var(--t2);margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;background:var(--s2);border:1px solid var(--bd2);border-radius:8px;color:var(--t1);font-family:var(--fb);font-size:13px;transition:border-color .12s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--ac)}
+.fg textarea{resize:vertical;min-height:65px;line-height:1.6}
+.fg select option{background:var(--s2)}
+.cb-group{display:flex;flex-wrap:wrap;gap:5px;padding:3px 0}
+.cb-label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2);cursor:pointer;padding:4px 8px;border:1px solid var(--bd2);border-radius:6px;transition:all .12s}
+.cb-label:hover{background:var(--s2)}
+.cb-label:has(input:checked){border-color:rgba(200,240,96,.4);background:rgba(200,240,96,.06);color:var(--t1)}
+.cb-label input{accent-color:var(--ac)}
+
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:var(--fb);transition:all .12s;border:none;white-space:nowrap}
+.btn-p{background:var(--ac);color:#111;font-weight:600}
+.btn-p:hover{opacity:.9}
+.btn-s{background:transparent;color:var(--t2);border:1px solid var(--bd2)}
+.btn-s:hover{background:var(--s2);color:var(--t1)}
+.btn-d{background:transparent;color:var(--red);border:1px solid rgba(240,96,96,.25)}
+.btn-d:hover{background:rgba(240,96,96,.08)}
+.btn-gen{width:100%;padding:11px;background:var(--ac);color:#111;font-weight:700;font-size:13.5px;border-radius:10px;cursor:pointer;border:none;transition:all .12s;font-family:var(--fb);margin-top:.25rem}
+.btn-gen:hover{opacity:.9;transform:translateY(-1px)}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap}
+
+/* INSIGHT */
+.insight{background:rgba(200,240,96,.04);border:1px solid rgba(200,240,96,.12);border-radius:var(--r);padding:.875rem 1rem;font-size:12.5px;color:var(--t2);line-height:1.7;margin-top:.75rem}
+.insight strong{color:var(--t1)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.875rem}
+.tabbtn{padding:5px 12px;border-radius:6px;font-size:11.5px;cursor:pointer;background:var(--s2);border:1px solid var(--bd);color:var(--t2);font-family:var(--fb);transition:all .12s}
+.tabbtn:hover{border-color:var(--bd2);color:var(--t1)}
+.tabbtn.active{background:var(--s3);border-color:rgba(200,240,96,.3);color:var(--ac)}
+
+/* CLIENT HOME */
+.c-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--bd)}
+.c-avatar-lg{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;color:#111}
+.c-title h1{font-size:20px;font-weight:700;margin-bottom:1px}
+.c-title p{font-size:12px;color:var(--t2)}
+.c-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:.3rem}
+.ctag{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--s2);border:1px solid var(--bd2);color:var(--t2);font-family:var(--fm)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:6px;margin-bottom:1.125rem}
+.ic{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:8px 11px}
+.ic-lbl{font-size:9px;color:var(--t3);margin-bottom:2px;font-family:var(--fm);text-transform:uppercase;letter-spacing:.05em}
+.ic-val{font-size:13px;font-weight:500}
+
+/* PLAN RESULT */
+.plan-result{margin-top:1.125rem}
+.media-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.media-tbl th{text-align:left;padding:8px 11px;background:var(--s2);color:var(--t3);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--bd2)}
+.media-tbl td{padding:8px 11px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.media-tbl tr:last-child td{border-bottom:none}
+.media-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.reach-bar-bg{display:inline-block;width:60px;height:4px;background:var(--s3);border-radius:2px;vertical-align:middle;margin-left:5px}
+.reach-bar-fg{height:4px;border-radius:2px}
+.pbadge{font-size:9px;padding:2px 6px;border-radius:4px;font-family:var(--fm);font-weight:500;white-space:nowrap}
+.pb1{background:rgba(96,240,160,.12);color:var(--grn)}
+.pb2{background:rgba(200,240,96,.12);color:var(--ac)}
+.pb3{background:rgba(240,160,96,.12);color:var(--ac3)}
+.pb4{background:var(--s3);color:var(--t3)}
+.summary-box{background:rgba(200,240,96,.04);border:1px solid rgba(200,240,96,.15);border-radius:var(--rl);padding:.875rem 1.125rem;margin-bottom:.875rem}
+.summary-box h3{font-size:11px;font-weight:600;color:var(--ac);margin-bottom:.4rem;font-family:var(--fm);text-transform:uppercase;letter-spacing:.06em}
+.summary-box p{font-size:13px;color:var(--t2);line-height:1.7}
+.summary-box strong{color:var(--t1);font-weight:500}
+.rt-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.875rem}
+.rt-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:9px 14px;text-align:center}
+.rt-val{font-size:20px;font-weight:700;font-family:var(--fm);letter-spacing:-.02em}
+.rt-lbl{font-size:10px;color:var(--t3);margin-top:1px}
+
+/* CAMP LIST */
+.camp-list{display:flex;flex-direction:column;gap:5px}
+.camp-item{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .12s}
+.camp-item:hover{border-color:var(--bd2)}
+
+/* DATA TABLE */
+.data-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.data-tbl th{text-align:left;padding:6px 9px;color:var(--t3);border-bottom:1px solid var(--bd);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+.data-tbl td{padding:6px 9px;border-bottom:1px solid var(--bd);color:var(--t2)}
+.data-tbl td:first-child{color:var(--t1);font-weight:500}
+.data-tbl tr:last-child td{border-bottom:none}
+.data-tbl tr:hover td{background:var(--s2)}
+
+/* RANKBAR */
+.rankbar{display:flex;flex-direction:column;gap:3px}
+.srow{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px}
+.srow:hover{background:var(--s2)}
+.snum{font-size:10px;font-family:var(--fm);color:var(--t3);width:16px;flex-shrink:0;text-align:right}
+.sname{font-size:11.5px;color:var(--t1);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bwrap{flex:1;height:5px;background:var(--s3);border-radius:3px;min-width:40px}
+.bfill{height:5px;border-radius:3px}
+.sval{font-size:10px;font-family:var(--fm);color:var(--t2);width:32px;text-align:right;flex-shrink:0}
+
+/* HEATMAP */
+.heatmap{border-collapse:collapse;width:100%;font-size:11px}
+.heatmap th{padding:6px 8px;color:var(--t3);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.05em;text-align:center;border-bottom:1px solid var(--bd)}
+.heatmap th:first-child{text-align:left}
+.heatmap td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.03);text-align:center;border-radius:3px}
+.heatmap td:first-child{text-align:left;color:var(--t1);font-size:11.5px}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bd2);border-radius:var(--rl);padding:1.5rem;width:580px;max-width:96vw;max-height:92vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:.2rem}
+.modal-sub{font-size:12px;color:var(--t2);margin-bottom:1rem}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--bd)}
+.modal-err{font-size:12px;color:var(--red);margin-top:.3rem;display:none}
+
+/* SPINNER */
+.spinner{width:28px;height:28px;border:3px solid var(--s3);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .75rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PRINT */
+@media print{
+  .sidebar,.btn-gen,.btn-row,.modal-ov,.new-client-btn,.c-header .btn-row{display:none!important}
+  body{background:white;color:#111}
+  .page{padding:.5rem}
+  .card,.mc,.ic,.rt-card,.summary-box{background:white;border-color:#ddd}
+  .media-tbl th{background:#f5f5f5;color:#666}
+  .media-tbl td,.data-tbl td{color:#333;border-color:#eee}
+  .summary-box p{color:#444}.summary-box h3{color:#000}
+  .t2,.t3{color:#666!important}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth-wrap" id="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-logo">Birtingarplön</div>
+    <div class="auth-title">Innskráning</div>
+    <div class="auth-sub">Essence Mediacom — miðlaáætlunarkerfi</div>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="fg"><label>Netfang</label><input type="email" id="auth-email" placeholder="nafn@essencemediacom.is" onkeydown="if(event.key===&#39;Enter&#39;)doLogin()"></div>
+    <div class="fg"><label>Lykilorð</label><input type="password" id="auth-pass" placeholder="••••••••" onkeydown="if(event.key===&#39;Enter&#39;)doLogin()"></div>
+    <button class="auth-btn" onclick="doLogin()" id="auth-btn">Skrá inn</button>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">Birtingarplön</div>
+      <div class="logo-sub">Essence Mediacom</div>
+    </div>
+
+    <div class="nav-sec">
+      <div class="nav-lbl">Kerfi</div>
+      <button class="nav-item active" id="nav-yfirlit" onclick="showPage(&#39;yfirlit&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac)"></span>Yfirlit
+      </button>
+    </div>
+
+    <div class="nav-sec">
+      <div class="nav-lbl">Gögn</div>
+      <button class="nav-item" id="nav-vefir" onclick="showPage(&#39;vefir&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac2)"></span>Vefir
+      </button>
+      <button class="nav-item" id="nav-utvarp" onclick="showPage(&#39;utvarp&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac3)"></span>Útvarp
+      </button>
+      <button class="nav-item" id="nav-sjonvarp" onclick="showPage(&#39;sjonvarp&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac4)"></span>Sjónvarp
+      </button>
+      <button class="nav-item" id="nav-prent" onclick="showPage(&#39;prent&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac)"></span>Prentmiðlar
+      </button>
+      <button class="nav-item" id="nav-social" onclick="showPage(&#39;social&#39;,this)">
+        <span class="nav-dot" style="background:#E1306C)"></span>Samfélagsmiðlar
+      </button>
+      <button class="nav-item" id="nav-hladv" onclick="showPage(&#39;hladv&#39;,this)">
+        <span class="nav-dot" style="background:var(--red)"></span>Hlaðvörp
+      </button>
+      <button class="nav-item" id="nav-ahrifav" onclick="showPage(&#39;ahrifav&#39;,this)">
+        <span class="nav-dot" style="background:var(--grn)"></span>Áhrifavaldar
+      </button>
+      <button class="nav-item" id="nav-tolfraedi" onclick="showPage(&#39;tolfraedi&#39;,this)">
+        <span class="nav-dot" style="background:var(--ac2)"></span>Tölfræði
+      </button>
+    </div>
+
+    <div class="nav-sec">
+      <div class="nav-lbl">Viðskiptavinir</div>
+    </div>
+    <div class="client-search">
+      <input type="text" placeholder="Leita..." oninput="filterClients(this.value)" id="csearch">
+    </div>
+    <div class="client-list" id="clist"></div>
+    <button class="new-client-btn" onclick="openClientModal()">+ Nýr viðskiptavinur</button>
+
+    <div class="sfooter">
+      <div class="user-email" id="user-email"></div>
+      <button class="logout-btn" onclick="doLogout()">Skrá út</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- YFIRLIT -->
+    <div class="page active" id="page-yfirlit">
+      <div class="ph hrow">
+        <div><h1>Yfirlit</h1><p>Gallup + Prósent gögn og viðskiptavinakerfi</p></div>
+        <span class="dbadge">Mars 2026</span>
+      </div>
+      <div class="metrics" id="ov-metrics"></div>
+      <div class="g2">
+        <div class="card">
+          <div class="stitle">Nýlegar herferðir</div>
+          <div id="ov-camps" style="font-size:12px;color:var(--t3)">Engar herferðir enn</div>
+        </div>
+        <div class="card">
+          <div class="stitle">Hvernig virkar þetta?</div>
+          <div style="font-size:12.5px;color:var(--t2);line-height:1.9">
+            <div>① Smelltu á <strong style="color:var(--t1)">+ Nýr viðskiptavinur</strong></div>
+            <div>② Vistaðu markhóp og upplýsingar</div>
+            <div>③ Smelltu á <strong style="color:var(--ac)">Búa til miðlaáætlun</strong></div>
+            <div>④ Kerfið les Gallup gögnin og stigvelur miðlana — <strong style="color:var(--t1)">strax, án nettengingar</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:.125rem">
+        <div class="stitle">Stærstu miðlar — vikudekkun</div>
+        <div class="cw" style="height:220px"><div id="ov-chart" style="width:100%;height:100%"></div></div>
+      </div>
+    </div>
+
+    <!-- VEFIR -->
+    <div class="page" id="page-vefir">
+      <div class="ph hrow"><div><h1>Vefir</h1><p>Gallup — vikudekkun · V43/2025–V10/2026</p></div><span class="dbadge">V10/2026</span></div>
+      <div class="metrics" id="web-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Þróun vikudekkunar — topp vefir</div>
+          <div class="card"><div class="cw" style="height:220px"><div id="web-trend" style="width:100%;height:100%"></div></div></div>
+        </div>
+        <div>
+          <div class="stitle">Samanburður — V10/2026</div>
+          <div class="card"><div id="web-table"></div></div>
+        </div>
+      </div>
+      <div class="insight" id="web-insight"></div>
+    </div>
+
+    <!-- ÚTVARP -->
+    <div class="page" id="page-utvarp">
+      <div class="ph hrow"><div><h1>Útvarp</h1><p>Gallup — vikudekkun · V01–V06/2026</p></div><span class="dbadge">V06/2026</span></div>
+      <div class="metrics" id="radio-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Vikudekkun eftir stöðvum</div>
+          <div class="card"><div class="cw" style="height:210px"><div id="radio-trend" style="width:100%;height:100%"></div></div></div>
+        </div>
+        <div>
+          <div class="stitle">Hlutdeild og mínútur</div>
+          <div class="card"><div id="radio-table"></div></div>
+        </div>
+      </div>
+      <div class="insight" id="radio-insight"></div>
+    </div>
+
+    <!-- SJÓNVARP -->
+    <div class="page" id="page-sjonvarp">
+      <div class="ph hrow"><div><h1>Sjónvarp</h1><p>Gallup — RÚV þættir · V02–V06/2026</p></div><span class="dbadge">V06/2026</span></div>
+      <div class="metrics" id="tv-metrics"></div>
+      <div class="card">
+        <div class="stitle">Topp þættir — áhorf og dekkun</div>
+        <div class="cw" style="height:230px"><div id="tv-chart" style="width:100%;height:100%"></div></div>
+      </div>
+      <div class="insight" id="tv-insight"></div>
+    </div>
+
+    <!-- PRENTMIÐLAR -->
+    <div class="page" id="page-prent">
+      <div class="ph hrow"><div><h1>Prentmiðlar</h1><p>Gallup — Morgunblaðið og Viðskiptablaðið · Jan–Feb 2026</p></div><span class="dbadge">Feb 2026</span></div>
+      <div class="metrics" id="print-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Morgunblaðið — þróun meðallesturs</div>
+          <div class="card"><div class="cw" style="height:190px"><div id="print-trend" style="width:100%;height:100%"></div></div></div>
+        </div>
+        <div>
+          <div class="stitle">Samanburður blaða</div>
+          <div class="card"><div class="cw" style="height:190px"><div id="print-bar" style="width:100%;height:100%"></div></div></div>
+        </div>
+      </div>
+      <div class="insight" id="print-insight"></div>
+    </div>
+
+    <!-- SAMFÉLAGSMIÐLAR -->
+    <div class="page" id="page-social">
+      <div class="ph hrow"><div><h1>Samfélagsmiðlar</h1><p>Prósent — notkun síðasta mánuð · Mars 2026 · n=39.843</p></div><span class="dbadge">Mars 2026</span></div>
+      <div class="metrics" id="social-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Þróun — mánuðir</div>
+          <div class="card"><div class="cw" style="height:200px"><div id="social-trend" style="width:100%;height:100%"></div></div></div>
+        </div>
+        <div>
+          <div class="stitle">Notkun eftir kynjahlutfalli</div>
+          <div class="card"><div class="cw" style="height:200px"><div id="social-gender" style="width:100%;height:100%"></div></div></div>
+        </div>
+      </div>
+      <div class="insight" id="social-insight"></div>
+    </div>
+
+    <!-- HLAÐVÖRP -->
+    <div class="page" id="page-hladv">
+      <div class="ph hrow"><div><h1>Hlaðvörp</h1><p>Prósent — hlustun síðasta mánuð · Mars 2026</p></div><span class="dbadge">Mars 2026</span></div>
+      <div class="metrics" id="pod-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Topp hlaðvörp — konur</div>
+          <div class="rankbar card" id="pod-female" style="padding:1rem"></div>
+        </div>
+        <div>
+          <div class="stitle">Topp hlaðvörp — karlar</div>
+          <div class="rankbar card" id="pod-male" style="padding:1rem"></div>
+        </div>
+      </div>
+      <div class="insight" id="pod-insight"></div>
+    </div>
+
+    <!-- ÁHRIFAVALDAR -->
+    <div class="page" id="page-ahrifav">
+      <div class="ph hrow"><div><h1>Áhrifavaldar</h1><p>Prósent — vinsælustu áhrifavaldar · Mars 2026 · n=1.047</p></div><span class="dbadge">Mars 2026</span></div>
+      <div class="metrics" id="inf-metrics"></div>
+      <div class="g2">
+        <div>
+          <div class="stitle">Topp 20 — heildarlistinn</div>
+          <div class="card" style="padding:.875rem"><div id="inf-overall"></div></div>
+        </div>
+        <div>
+          <div class="stitle">Meðvitund og traust eftir aldri</div>
+          <div class="card"><div class="cw" style="height:190px"><div id="inf-age-chart" style="width:100%;height:100%"></div></div></div>
+          <div class="stitle" style="margin-top:.75rem">Hvar fylgst með áhrifavöldum</div>
+          <div class="card"><div class="cw" style="height:130px"><div id="inf-plat-chart" style="width:100%;height:100%"></div></div></div>
+        </div>
+      </div>
+      <div class="g2" style="margin-top:.75rem">
+        <div>
+          <div class="stitle">Konur — topp áhrifavaldar</div>
+          <div class="card" style="padding:.875rem"><div id="inf-female"></div></div>
+        </div>
+        <div>
+          <div class="stitle">Karlar — topp áhrifavaldar</div>
+          <div class="card" style="padding:.875rem"><div id="inf-male"></div></div>
+        </div>
+      </div>
+      <div class="stitle" style="margin-top:.75rem">Eftir aldurshópi</div>
+      <div class="tabs" id="inf-age-tabs"></div>
+      <div class="card" style="padding:.875rem"><div id="inf-age-rank"></div></div>
+    </div>
+
+    <!-- TÖLFRÆÐI -->
+    <div class="page" id="page-tolfraedi">
+      <div class="ph hrow"><div><h1>Tölfræði</h1><p>Lýðfræðileg greining — allir miðlar eftir aldri, kyni, svæði, tekjum og menntun</p></div><span class="dbadge">Mars 2026</span></div>
+      <div class="tabs">
+        <button class="tabbtn active" onclick="showTolf(&#39;aldur&#39;,this)">Eftir aldri</button>
+        <button class="tabbtn" onclick="showTolf(&#39;kyn&#39;,this)">Eftir kyni</button>
+        <button class="tabbtn" onclick="showTolf(&#39;svaedi&#39;,this)">Eftir svæði</button>
+        <button class="tabbtn" onclick="showTolf(&#39;tekjur&#39;,this)">Eftir tekjum</button>
+        <button class="tabbtn" onclick="showTolf(&#39;menntun&#39;,this)">Eftir menntun</button>
+      </div>
+      <div id="tolf-content"></div>
+    </div>
+
+    <!-- CLIENT PAGE -->
+    <div class="page" id="page-client">
+      <div id="client-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- CLIENT MODAL -->
+<div class="modal-ov" id="modal-client">
+  <div class="modal">
+    <h2 id="mc-title">Nýr viðskiptavinur</h2>
+    <p class="modal-sub">Þessar upplýsingar verða notaðar sjálfkrafa við stigvægi miðla</p>
+    <div class="fg"><label>Nafn fyrirtækis / vörumerki *</label>
+      <input type="text" id="mc-name" placeholder="t.d. Orkan, Penninn, Bláa lónið...">
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Iðnaðarflokkur *</label>
+        <select id="mc-ind">
+          <option value="">Veldu...</option>
+          <option>Bílaiðnaður</option><option>Matvara og drykkjarvörur</option>
+          <option>Fjármálaþjónusta</option><option>Fasteignir</option>
+          <option>Ferðaþjónusta og hótel</option><option>Heilsa og líðan</option>
+          <option>Tækni og hugbúnaður</option><option>Smásala</option>
+          <option>Menntun</option><option>Byggingariðnaður</option>
+          <option>Lýðheilsa og opinber þjónusta</option>
+          <option>Tíska og fegurð</option><option>Íþróttir og frístundir</option>
+          <option>Annað</option>
+        </select>
+      </div>
+      <div class="fg"><label>Svæði</label>
+        <select id="mc-reg">
+          <option value="allt landið">Allt landið</option>
+          <option value="Reykjavík og nágrenni">Reykjavík og nágrenni</option>
+          <option value="landsbyggðin">Landsbyggðin</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Aldur markhóps (velja má fleiri)</label>
+      <div class="cb-group" id="mc-age">
+        <label class="cb-label"><input type="checkbox" value="18-24"><span>18–24</span></label>
+        <label class="cb-label"><input type="checkbox" value="25-34"><span>25–34</span></label>
+        <label class="cb-label"><input type="checkbox" value="35-44"><span>35–44</span></label>
+        <label class="cb-label"><input type="checkbox" value="45-54"><span>45–54</span></label>
+        <label class="cb-label"><input type="checkbox" value="55+"><span>55+</span></label>
+        <label class="cb-label"><input type="checkbox" value="all" id="mc-age-all" onchange="if(this.checked)document.querySelectorAll(&#39;#mc-age input:not(#mc-age-all)&#39;).forEach(c=&gt;c.checked=false)"><span>Allir</span></label>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Kyn</label>
+        <select id="mc-gen"><option value="bæði kyn">Bæði kyn</option><option value="konur">Konur</option><option value="karlar">Karlar</option></select>
+      </div>
+      <div class="fg"><label>Tekjuhópur</label>
+        <select id="mc-inc"><option value="allir">Allir</option><option value="lægri">Lægri tekjur</option><option value="meðal">Meðaltekjur</option><option value="hærri">Hærri tekjur</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Um fyrirtækið (valkvæmt)</label>
+      <textarea id="mc-desc" placeholder="Stutt lýsing..."></textarea>
+    </div>
+    <div class="fg"><label>Keppinautar (valkvæmt)</label>
+      <input type="text" id="mc-comp" placeholder="t.d. N1, Olis...">
+    </div>
+    <div class="modal-err" id="mc-err"></div>
+    <div class="modal-acts">
+      <button class="btn btn-s" onclick="closeClientModal()">Hætta við</button>
+      <button class="btn btn-p" id="mc-save-btn" onclick="saveClient()">Vista</button>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ════════════════════════════════════════════════════════
+const SB_URL = 'https://kzyeyaqecycqtwzviacj.supabase.co';
+const SB_KEY = 'sb_publishable_ZAkjrfksVvMFlHy7cRow-Q_lR74rmvf';
+
+async function sbFetch(path, opts={}){
+  const r = await fetch(SB_URL+path, {
+    ...opts,
+    headers:{
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer '+(getToken()||SB_KEY),
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer||'',
+      ...(opts.headers||{})
+    }
+  });
+  if(!r.ok){ const e=await r.json().catch(()=>({message:r.statusText})); throw new Error(e.message||r.statusText); }
+  if(r.status===204) return null;
+  return r.json();
+}
+
+// Auth helpers
+function getToken(){ return localStorage.getItem('bp_token'); }
+function setToken(t){ localStorage.setItem('bp_token',t); }
+function clearToken(){ localStorage.removeItem('bp_token'); localStorage.removeItem('bp_user'); }
+function getUser(){ try{return JSON.parse(localStorage.getItem('bp_user'));}catch{return null;} }
+
+async function doLogin(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-err');
+  const btn   = document.getElementById('auth-btn');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Fylltu inn netfang og lykilorð';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Skrá inn...';
+  try{
+    const data = await sbFetch('/auth/v1/token?grant_type=password',{
+      method:'POST',
+      body:JSON.stringify({email,password:pass}),
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'}
+    });
+    setToken(data.access_token);
+    localStorage.setItem('bp_user', JSON.stringify(data.user));
+    showApp();
+  } catch(e){
+    errEl.textContent = e.message.includes('Invalid')?'Rangt netfang eða lykilorð':e.message;
+    errEl.style.display='block';
+  } finally { btn.disabled=false; btn.textContent='Skrá inn'; }
+}
+
+async function doLogout(){
+  try{ await sbFetch('/auth/v1/logout',{method:'POST'}); }catch{}
+  clearToken();
+  document.getElementById('shell').classList.remove('show');
+  document.getElementById('auth-wrap').style.display='flex';
+}
+
+function showApp(){
+  document.getElementById('auth-wrap').style.display='none';
+  document.getElementById('shell').classList.add('show');
+  const u=getUser();
+  document.getElementById('user-email').textContent=u?.email||'';
+  initApp();
+}
+
+// ════════════════════════════════════════════════════════
+// GALLUP DATA
+// ════════════════════════════════════════════════════════
+const POP=266000;
+const TICK={color:'#9a9b9f',font:{size:9,family:'monospace'}};
+const GRID='rgba(255,255,255,0.06)';
+const charts={};
+function mkChart(id,cfg){
+  if(!document.getElementById(id))return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),cfg);
+}
+const fmtk=n=>n>=1000?(n/1000).toFixed(0)+'k':String(Math.round(n));
+const fmt=n=>Math.round(n).toLocaleString('is');
+const pct=n=>Math.round(n/POP*100)+'%';
+
+const WEB_DATA={
+  labels:['V43','V44','V45','V46','V47','V48','V49','V50','V51','V52','V01','V02','V03','V04','V05','V06','V07','V08','V09','V10'],
+  sites:[
+    {name:'mbl.is',col:'#c8f060',users:[209340,215420,218930,221450,223100,219870,217340,214560,220890,224300,218760,221340,219870,222560,220340,221780,219450,222100,221340,220580]},
+    {name:'visir.is',col:'#60d0f0',users:[208120,212340,216780,219230,221450,218760,215430,212890,218340,222100,216540,219870,218340,221670,219450,220890,218230,221340,220120,215255]},
+    {name:'dv.is',col:'#f0a060',users:[98340,101230,104560,106780,108900,105670,103450,101230,105670,108900,103450,106780,105340,107890,106230,107450,105780,108230,107340,107254]},
+    {name:'ruv.is',col:'#d060f0',users:[71230,73450,75670,77890,79230,76780,74560,72340,76780,80120,75340,78670,77230,79890,78120,79450,77780,80230,79120,78457]},
+  ]
+};
+const RADIO_DATA={
+  weeks:['V01','V02','V03','V04','V05','V06'],
+  stations:[
+    {name:'Rás 2',col:'#60d0f0',weekly:[118450,120230,119870,121340,122890,122558],shareV06:28.8,dailyV06:68340,mins:142},
+    {name:'Bylgjan',col:'#f0a060',weekly:[116780,118450,117890,119230,120780,120289],shareV06:37.2,dailyV06:71230,mins:184},
+    {name:'Rás 1',col:'#c8f060',weekly:[57890,58340,57450,58890,59450,59095],shareV06:22.2,dailyV06:34560,mins:109},
+    {name:'K100',col:'#d060f0',weekly:[43450,44230,43890,44560,45230,45194],shareV06:4.8,dailyV06:26780,mins:24},
+    {name:'FM957',col:'#a060f0',weekly:[32340,32890,32450,33120,33560,33373],shareV06:1.7,dailyV06:19450,mins:9},
+  ]
+};
+const TV_DATA={
+  programs:[
+    {prog:'RÚV — Kveikur',      col:'#60d0f0',weekly:[82340,85670,88230,90120,92340,90320],avgView:88170,reach:90320,pct:34},
+    {prog:'RÚV — Fréttir',      col:'#80c0f0',weekly:[68450,70230,71890,73120,72890,71560],avgView:71357,reach:71560,pct:27},
+    {prog:'RÚV — Vikan m. Gísla',col:'#a060f0',weekly:[70120,71890,73450,74230,73890,72800],avgView:72730,reach:72800,pct:27},
+    {prog:'RÚV — Kastljós',     col:'#c8f060',weekly:[51230,52890,54120,55340,54890,53670],avgView:53690,reach:53670,pct:20},
+    {prog:'RÚV — Landinn',      col:'#f0a060',weekly:[50120,51890,52450,53670,53120,53250],avgView:52420,reach:53250,pct:20},
+    {prog:'EM handbolta (tipp)',col:'#f06060',weekly:[null,null,null,null,177940,144300],avgView:161120,reach:177940,pct:67,special:true},
+  ]
+};
+const PRINT_DATA={
+  morgunbladid:{
+    monthly:[{m:'Jan',readers:47300},{m:'Feb',readers:48800}],
+    weeklyReaders:89800,coverPct:38.1,
+  },
+  vidskiptabladid:{weeklyReaders:17100,coverPct:7.3}
+};
+const PROSENT={
+  social:{
+    platforms:[
+      {name:'Facebook', pct:95, male:94, female:96, col:'#1877F2',
+       byAge:{'18-24':82,'25-34':91,'35-44':97,'45-54':98,'55-64':96,'65+':90}},
+      {name:'Instagram',pct:72, male:55, female:81, col:'#E1306C',
+       byAge:{'18-24':93,'25-34':86,'35-44':72,'45-54':55,'55-64':31,'65+':14}},
+      {name:'Snapchat', pct:61, male:52, female:68, col:'#c8b800',
+       byAge:{'18-24':90,'25-34':78,'35-44':56,'45-54':35,'55-64':18,'65+':7}},
+      {name:'YouTube',  pct:59, male:63, female:55, col:'#FF0000',
+       byAge:{'18-24':78,'25-34':72,'35-44':63,'45-54':51,'55-64':38,'65+':22}},
+      {name:'TikTok',   pct:31, male:24, female:37, col:'#69C9D0',
+       byAge:{'18-24':73,'25-34':45,'35-44':28,'45-54':16,'55-64':9,'65+':4}},
+      {name:'WhatsApp', pct:24, male:22, female:26, col:'#25D366',
+       byAge:{'18-24':28,'25-34':30,'35-44':26,'45-54':21,'55-64':17,'65+':12}},
+      {name:'LinkedIn', pct:13, male:14, female:12, col:'#0A66C2',
+       byAge:{'18-24':8,'25-34':16,'35-44':21,'45-54':17,'55-64':10,'65+':4}},
+      {name:'Pinterest',pct:19, male:8,  female:28, col:'#E60023',
+       byAge:{'18-24':24,'25-34':23,'35-44':21,'45-54':16,'55-64':11,'65+':7}},
+    ],
+    trend:{
+      labels:['Sep 24','Okt','Nóv','Des','Jan 25','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des','Jan 26','Feb','Mar'],
+      series:{
+        Facebook:[96,95,96,94,95,96,95,96,95,94,95,96,95,96,95,94,95,96,95],
+        Instagram:[70,71,72,70,71,72,71,73,72,71,72,73,72,73,72,71,72,73,72],
+        TikTok:[26,27,28,27,28,29,28,30,29,28,29,30,29,30,30,29,30,31,31],
+        Snapchat:[59,60,61,60,60,61,60,62,61,60,61,62,61,62,61,60,61,62,61],
+        YouTube:[57,58,59,57,58,59,58,60,59,58,59,60,59,60,59,58,59,60,59],
+      }
+    }
+  },
+  podcasts:{
+    overallPct:43,
+    female:[
+      {name:'Morðcastið',                pct:28},{name:'Komið gott',             pct:24},
+      {name:'Í ljósi sögunnar (RÚV)',    pct:23},{name:'Heimskviður (RÚV)',       pct:18},
+      {name:'Spursmál (Morgunblaðið)',   pct:16},{name:'Svona líður mér',         pct:14},
+      {name:'Heilsupódcast',             pct:12},{name:'Kvennablaðið (hlaðvarp)', pct:11},
+    ],
+    male:[
+      {name:'Dr. Football Podcast',      pct:34},{name:'Í ljósi sögunnar (RÚV)', pct:28},
+      {name:'Heimskviður (RÚV)',          pct:22},{name:'Spursmál (Morgunblaðið)',pct:18},
+      {name:'Tæknipódcast',              pct:16},{name:'Viðskiptapódcast',        pct:14},
+      {name:'Útvarpspódcast',            pct:12},{name:'Gáfupódcast',             pct:10},
+    ],
+    byAge:{'18-24':52,'25-34':61,'35-44':56,'45-54':43,'55-64':28,'65+':14},
+    byGender:{female:46,male:40},
+    byRegion:{rvk:45,land:39},
+    byIncome:{high:56,mid:44,low:32},
+  },
+  influencers:{
+    overall:{awarePct:68,followsPct:44,trustsPct:29,hasBoughtPct:18},
+    byAge:{
+      '18-24':{aware:92,follows:78,trusts:55,hasBought:38},
+      '25-34':{aware:85,follows:65,trusts:44,hasBought:28},
+      '35-44':{aware:75,follows:48,trusts:32,hasBought:19},
+      '45-54':{aware:58,follows:30,trusts:20,hasBought:11},
+      '55-64':{aware:38,follows:16,trusts:11,hasBought:5},
+    },
+    byPlatform:[
+      {platform:'Instagram',pct:58},{platform:'TikTok',pct:34},
+      {platform:'YouTube',pct:28},{platform:'Facebook',pct:22},
+      {platform:'Snapchat',pct:18},{platform:'Podcast',pct:14},
+    ],
+    top20:[
+      {name:'Sólrun Diego (solrundiego)',    pct:20,col:'#c8f060',tags:['lifestyle','female','18-44']},
+      {name:'Eva Ruza (evaruza)',            pct:19,col:'#E1306C',tags:['lifestyle','female','18-44']},
+      {name:'Sunneva Eir Einarsdóttir',     pct:19,col:'#60d0f0',tags:['lifestyle','female','18-34']},
+      {name:'Katrín Edda (katrinedda1)',    pct:18,col:'#f0a060',tags:['lifestyle','female','18-44']},
+      {name:'Systur & Makar - Katla H.',    pct:18,col:'#d060f0',tags:['lifestyle','female','25-54']},
+      {name:'Eva Laufey (evalaufeykjaran)', pct:18,col:'#f060a0',tags:['lifestyle','female','18-44']},
+      {name:'Steindi Jr. (steindijr)',       pct:17,col:'#60a0f0',tags:['lifestyle','male','18-44']},
+      {name:'Vilhelm Neto (villineto)',      pct:17,col:'#80d080',tags:['lifestyle','male','18-34']},
+      {name:'Mari Järsk (mari_jaersk)',      pct:17,col:'#f0d060',tags:['lifestyle','female','18-44']},
+      {name:'Auðunn Blöndal (audunnblondal)',pct:16,col:'#60f0c0',tags:['lifestyle','male','18-34']},
+      {name:'Ragga nagli (ragganagli)',      pct:16,col:'#f08040',tags:['lifestyle','female','25-54']},
+      {name:'Skreytum hús - Soffía Dögg',   pct:16,col:'#a060f0',tags:['lifestyle','female','25-54']},
+      {name:'Friðrik Ómar (fromarinn)',      pct:15,col:'#60c0f0',tags:['lifestyle','male','25-54']},
+      {name:'Guðrún Veiga Guðmundsdóttir',  pct:15,col:'#f06080',tags:['lifestyle','female','25-44']},
+      {name:'Linda Ben (lindaben)',          pct:14,col:'#80f060',tags:['lifestyle','female','18-44']},
+      {name:'Sigvaldi Kaldalóns',            pct:14,col:'#d0a060',tags:['lifestyle','male','25-54']},
+      {name:'Helgi Ómarsson (helgiomarsson)',pct:13,col:'#60d0a0',tags:['lifestyle','male','18-34']},
+      {name:'Rúrik Gíslason (rurikgislason)',pct:13,col:'#a0d060',tags:['sport','male','25-54']},
+      {name:'Hjálmar Örn Jóhannsson',       pct:13,col:'#f0a0d0',tags:['lifestyle','male','25-54']},
+      {name:'Sigmar Vilhjálmsson (simmivill)',pct:12,col:'#60a0d0',tags:['lifestyle','male','25-44']},
+    ],
+    byGenderTop:{
+      female:[
+        {name:'Sólrun Diego (solrundiego)',   pct:27,col:'#c8f060'},
+        {name:'Systur & Makar - Katla H.',   pct:25,col:'#d060f0'},
+        {name:'Katrín Edda (katrinedda1)',   pct:25,col:'#f0a060'},
+        {name:'Eva Ruza (evaruza)',           pct:24,col:'#E1306C'},
+        {name:'Sunneva Eir Einarsdóttir',    pct:24,col:'#60d0f0'},
+        {name:'Eva Laufey (evalaufeykjaran)',  pct:23,col:'#f060a0'},
+        {name:'Skreytum hús - Soffía Dögg',  pct:22,col:'#a060f0'},
+        {name:'Guðrún Veiga Guðmundsdóttir', pct:22,col:'#f06080'},
+        {name:'Mari Järsk (mari_jaersk)',     pct:21,col:'#f0d060'},
+        {name:'Ragga nagli (ragganagli)',     pct:20,col:'#f08040'},
+      ],
+      male:[
+        {name:'Steindi Jr. (steindijr)',      pct:28,col:'#60a0f0'},
+        {name:'Vilhelm Neto (villineto)',     pct:23,col:'#80d080'},
+        {name:'Egill Einarsson (egillgillz)', pct:21,col:'#d060a0'},
+        {name:'Auðunn Blöndal (audunnblondal)',pct:21,col:'#60f0c0'},
+        {name:'Hjálmar Örn Jóhannsson',      pct:21,col:'#f0a0d0'},
+        {name:'Skúli Jóa (skulijoa)',         pct:20,col:'#a0f0c0'},
+        {name:'Garðar Viðarsson (iceredneck)',pct:19,col:'#c0a080'},
+        {name:'Sigvaldi Kaldalóns',           pct:16,col:'#d0a060'},
+        {name:'Sigmar Vilhjálmsson (simmivill)',pct:16,col:'#60a0d0'},
+        {name:'Reynir Bergmann Reynisson',    pct:14,col:'#a0d0f0'},
+      ]
+    },
+    byAgeTop:{
+      '18-24':[
+        {name:'Sunneva Eir Einarsdóttir',pct:53,col:'#60d0f0'},{name:'Aron Már (aronmola)',pct:39,col:'#f0f060'},
+        {name:'Vilhelm Neto (villineto)',pct:37,col:'#80d080'},{name:'Birta Líf Ólafs',pct:30,col:'#f0c0a0'},
+        {name:'Steindi Jr. (steindijr)',pct:29,col:'#60a0f0'},{name:'Auðunn Blöndal',pct:28,col:'#60f0c0'},
+        {name:'Embla Líf Wigum',pct:25,col:'#d0f060'},{name:'Egill Einarsson',pct:24,col:'#d060a0'},
+        {name:'Tinna Björk (tinnabk)',pct:22,col:'#60c0d0'},{name:'Sólrun Diego',pct:17,col:'#c8f060'},
+      ],
+      '25-34':[
+        {name:'Sólrun Diego (solrundiego)',pct:30,col:'#c8f060'},{name:'Steindi Jr.',pct:28,col:'#60a0f0'},
+        {name:'Vilhelm Neto (villineto)',pct:27,col:'#80d080'},{name:'Sunneva Eir',pct:27,col:'#60d0f0'},
+        {name:'Auðunn Blöndal',pct:25,col:'#60f0c0'},{name:'Katrín Edda',pct:24,col:'#f0a060'},
+        {name:'Helgi Ómarsson',pct:20,col:'#60d0a0'},{name:'Egill Einarsson',pct:19,col:'#d060a0'},
+        {name:'Fanney Dóra',pct:19,col:'#d0c0f0'},{name:'Linda Ben',pct:17,col:'#80f060'},
+      ],
+      '35-44':[
+        {name:'Sólrun Diego (solrundiego)',pct:25,col:'#c8f060'},{name:'Katrín Edda',pct:22,col:'#f0a060'},
+        {name:'Eva Ruza (evaruza)',pct:22,col:'#E1306C'},{name:'Guðrún Veiga Guðmundsdóttir',pct:21,col:'#f06080'},
+        {name:'Mari Järsk',pct:19,col:'#f0d060'},{name:'Vilhelm Neto',pct:19,col:'#80d080'},
+        {name:'Eva Laufey',pct:19,col:'#f060a0'},{name:'Steindi Jr.',pct:19,col:'#60a0f0'},
+        {name:'Systur & Makar',pct:17,col:'#d060f0'},{name:'Garðar Viðarsson',pct:17,col:'#c0a080'},
+      ],
+      '45-54':[
+        {name:'Systur & Makar',pct:31,col:'#d060f0'},{name:'Eva Ruza (evaruza)',pct:30,col:'#E1306C'},
+        {name:'Friðrik Ómar (fromarinn)',pct:30,col:'#60c0f0'},{name:'Ragga nagli',pct:26,col:'#f08040'},
+        {name:'Eva Laufey',pct:25,col:'#f060a0'},{name:'Skreytum hús',pct:25,col:'#a060f0'},
+        {name:'Mari Järsk',pct:25,col:'#f0d060'},{name:'Guðrún Veiga',pct:22,col:'#f06080'},
+        {name:'Sigvaldi Kaldalóns',pct:21,col:'#d0a060'},{name:'Katrín Edda',pct:19,col:'#f0a060'},
+      ],
+      '55+':[
+        {name:'Eva Ruza (evaruza)',pct:20,col:'#E1306C'},{name:'Skreytum hús',pct:20,col:'#a060f0'},
+        {name:'Ragga nagli',pct:19,col:'#f08040'},{name:'Sólrun Diego',pct:19,col:'#c8f060'},
+        {name:'Systur & Makar',pct:18,col:'#d060f0'},{name:'Friðrik Ómar',pct:18,col:'#60c0f0'},
+        {name:'Eva Laufey',pct:18,col:'#f060a0'},{name:'Mari Järsk',pct:15,col:'#f0d060'},
+        {name:'Guðrún Veiga',pct:15,col:'#f06080'},{name:'Katrín Edda',pct:14,col:'#f0a060'},
+      ]
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════
+// MEDIA FOR SCORING ENGINE
+// ════════════════════════════════════════════════════════
+const MEDIA=[
+  {id:'mbl',name:'mbl.is',type:'Vefur',reach:220580,pct:83,col:'#c8f060',tags:['broad','news','all'],ageIdx:{young:1.0,mid:1.1,older:1.0},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.1,land:1.0}},
+  {id:'visir',name:'visir.is',type:'Vefur',reach:215255,pct:81,col:'#60d0f0',tags:['broad','news','young','lifestyle'],ageIdx:{young:1.2,mid:1.0,older:0.9},genderIdx:{m:0.9,f:1.1},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'dv',name:'dv.is',type:'Vefur',reach:107254,pct:40,col:'#f0a060',tags:['broad','news','young'],ageIdx:{young:1.3,mid:1.0,older:0.7},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'ruv_web',name:'ruv.is (vefur)',type:'Vefur',reach:78457,pct:29,col:'#d060f0',tags:['news'],ageIdx:{young:0.8,mid:1.1,older:1.2},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.1}},
+  {id:'ja',name:'ja.is',type:'Vefur',reach:31730,pct:12,col:'#60f0a0',tags:['broad','all'],ageIdx:{young:0.9,mid:1.0,older:1.0},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'mannlif',name:'mannlif.is',type:'Vefur',reach:28015,pct:11,col:'#f06060',tags:['lifestyle','female'],ageIdx:{young:1.1,mid:1.1,older:0.7},genderIdx:{m:0.4,f:1.6},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'fotb',name:'fotbolti.net',type:'Vefur',reach:25346,pct:10,col:'#60a0f0',tags:['sport','male'],ageIdx:{young:1.2,mid:1.2,older:0.7},genderIdx:{m:1.8,f:0.2},regionIdx:{rvk:1.0,land:1.1}},
+  {id:'vb_web',name:'vb.is',type:'Vefur',reach:21338,pct:8,col:'#f0d060',tags:['news','business'],ageIdx:{young:0.8,mid:1.1,older:1.1},genderIdx:{m:1.2,f:0.8},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'ras2',name:'Rás 2',type:'Útvarp',reach:122558,pct:46,col:'#60d0f0',tags:['broad','lifestyle'],ageIdx:{young:0.9,mid:1.1,older:1.1},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.1}},
+  {id:'bylgjan',name:'Bylgjan',type:'Útvarp',reach:120289,pct:45,col:'#f0a060',tags:['broad','lifestyle'],ageIdx:{young:0.8,mid:1.1,older:1.2},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:0.9,land:1.3}},
+  {id:'ras1',name:'Rás 1 (RÚV)',type:'Útvarp',reach:59095,pct:22,col:'#c8f060',tags:['news','business','b2b'],ageIdx:{young:0.5,mid:1.0,older:1.5},genderIdx:{m:1.1,f:0.9},regionIdx:{rvk:1.0,land:1.2}},
+  {id:'k100',name:'K100',type:'Útvarp',reach:45194,pct:17,col:'#d060f0',tags:['young','music'],ageIdx:{young:1.6,mid:0.9,older:0.4},genderIdx:{m:0.9,f:1.1},regionIdx:{rvk:1.2,land:0.8}},
+  {id:'fm957',name:'FM957',type:'Útvarp',reach:33373,pct:13,col:'#a060f0',tags:['young','music'],ageIdx:{young:1.5,mid:0.9,older:0.5},genderIdx:{m:0.9,f:1.1},regionIdx:{rvk:1.2,land:0.8}},
+  {id:'x977',name:'X977',type:'Útvarp',reach:27877,pct:10,col:'#60c0d0',tags:['young'],ageIdx:{young:1.5,mid:0.9,older:0.5},genderIdx:{m:1.1,f:0.9},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'ruv_tv',name:'RÚV — Kveikur',type:'Sjónvarp',reach:90320,pct:34,col:'#60d0f0',tags:['broad','news'],ageIdx:{young:0.7,mid:1.1,older:1.3},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.1}},
+  {id:'ruv_frt',name:'RÚV — Fréttir',type:'Sjónvarp',reach:71560,pct:27,col:'#80c0f0',tags:['news'],ageIdx:{young:0.6,mid:1.1,older:1.4},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.1}},
+  {id:'mbl_pr',name:'Morgunblaðið',type:'Prentmiðlar',reach:89800,pct:34,col:'#d060f0',tags:['broad','news','business'],ageIdx:{young:0.6,mid:1.1,older:1.4},genderIdx:{m:1.0,f:1.0},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'vb_pr',name:'Viðskiptablaðið',type:'Prentmiðlar',reach:17100,pct:6,col:'#f0a060',tags:['business','b2b'],ageIdx:{young:0.4,mid:1.2,older:1.4},genderIdx:{m:1.3,f:0.7},regionIdx:{rvk:1.2,land:0.8}},
+  {id:'fb',name:'Facebook',type:'Samfélagsmiðlar',reach:252700,pct:95,col:'#1877F2',tags:['broad','all'],ageIdx:{young:0.9,mid:1.0,older:1.1},genderIdx:{m:0.97,f:1.03},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'ig',name:'Instagram',type:'Samfélagsmiðlar',reach:191520,pct:72,col:'#E1306C',tags:['lifestyle','young','female'],ageIdx:{young:1.3,mid:1.1,older:0.6},genderIdx:{m:0.7,f:1.3},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'snap',name:'Snapchat',type:'Samfélagsmiðlar',reach:162460,pct:61,col:'#c8b800',tags:['young'],ageIdx:{young:1.5,mid:0.9,older:0.5},genderIdx:{m:0.9,f:1.1},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'yt',name:'YouTube',type:'Samfélagsmiðlar',reach:157040,pct:59,col:'#FF0000',tags:['broad','young','sport'],ageIdx:{young:1.3,mid:1.1,older:0.7},genderIdx:{m:1.1,f:0.9},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'tiktok',name:'TikTok',type:'Samfélagsmiðlar',reach:82460,pct:31,col:'#69C9D0',tags:['young','lifestyle'],ageIdx:{young:2.0,mid:0.9,older:0.3},genderIdx:{m:0.7,f:1.3},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'li',name:'LinkedIn',type:'Samfélagsmiðlar',reach:34580,pct:13,col:'#0A66C2',tags:['business','b2b'],ageIdx:{young:0.7,mid:1.4,older:0.9},genderIdx:{m:1.1,f:0.9},regionIdx:{rvk:1.3,land:0.7}},
+  {id:'pod_ljosi',name:'Í ljósi sögunnar (Hlaðvarp)',type:'Hlaðvarp',reach:50000,pct:19,col:'#1d6fa4',tags:['news','broad'],ageIdx:{young:0.8,mid:1.1,older:1.2},genderIdx:{m:1.1,f:0.9},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'pod_dr',name:'Dr. Football (Hlaðvarp)',type:'Hlaðvarp',reach:12600,pct:5,col:'#60a0f0',tags:['sport','male'],ageIdx:{young:1.1,mid:1.3,older:0.7},genderIdx:{m:1.8,f:0.2},regionIdx:{rvk:1.0,land:1.0}},
+  {id:'inf_ig',name:'Áhrifavaldar — Instagram',type:'Áhrifavaldar',reach:65000,pct:24,col:'#E1306C',tags:['lifestyle','young','female'],ageIdx:{young:1.6,mid:1.0,older:0.4},genderIdx:{m:0.5,f:1.5},regionIdx:{rvk:1.1,land:0.9}},
+  {id:'inf_tk',name:'Áhrifavaldar — TikTok',type:'Áhrifavaldar',reach:38000,pct:14,col:'#69C9D0',tags:['lifestyle','young'],ageIdx:{young:1.8,mid:0.8,older:0.3},genderIdx:{m:0.7,f:1.3},regionIdx:{rvk:1.1,land:0.9}},
+];
+
+const GOAL_BOOSTS={
+  'breið dekkun og vörumerkjavitund':{tags:['broad'],types:['Vefur','Útvarp','Sjónvarp','Samfélagsmiðlar'],mult:1.3},
+  'söluaukning og bein viðbrögð':{tags:['broad','lifestyle','young'],types:['Samfélagsmiðlar','Vefur'],mult:1.4},
+  'stafræn herferð — samfélagsmiðlar':{tags:['young','lifestyle'],types:['Samfélagsmiðlar','Áhrifavaldar'],mult:1.8},
+  'B2B — viðskiptamarkhópur':{tags:['business','b2b','news'],types:['Prentmiðlar','Útvarp','Samfélagsmiðlar'],mult:1.6},
+  'staðbundin herferð':{tags:['broad'],types:['Útvarp','Vefur'],mult:1.3},
+};
+const IND_TAGS={
+  'Bílaiðnaður':['broad','male','sport'],
+  'Matvara og drykkjarvörur':['broad','lifestyle'],
+  'Fjármálaþjónusta':['business','b2b','news'],
+  'Fasteignir':['broad','business','news'],
+  'Ferðaþjónusta og hótel':['lifestyle','young','broad'],
+  'Heilsa og líðan':['lifestyle','female','young'],
+  'Tækni og hugbúnaður':['young','business'],
+  'Smásala':['broad','lifestyle'],
+  'Menntun':['young'],
+  'Byggingariðnaður':['business','male'],
+  'Tíska og fegurð':['female','young','lifestyle'],
+  'Íþróttir og frístundir':['sport','young','male'],
+};
+
+function scoreMedia(client,campaign){
+  const ages=(client.age||'all').split(', ');
+  const gender=client.gender||'bæði kyn';
+  const region=client.region||'allt landið';
+  const goal=campaign.goal||'breið dekkun og vörumerkjavitund';
+  const useInn=campaign.useInn!==false;
+  const useSoc=campaign.useSoc!==false;
+  const selPlats=campaign.selPlats||[];
+  const indTags=IND_TAGS[client.industry||'']||['broad'];
+  const gr=GOAL_BOOSTS[goal]||GOAL_BOOSTS['breið dekkun og vörumerkjavitund'];
+
+  return MEDIA.map(m=>{
+    const isSoc=['Samfélagsmiðlar','Áhrifavaldar'].includes(m.type);
+    if(isSoc&&!useSoc)return null;
+    if(!isSoc&&!useInn)return null;
+    if(selPlats.length>0&&!selPlats.includes(m.name))return null;
+
+    let score=m.reach;
+    let ageBoost=0,ageCount=0;
+    if(ages.includes('all')||ages.includes('allir aldurshópar')){ageBoost=1.0;ageCount=1;}
+    else{
+      ages.forEach(a=>{
+        if(a.includes('18')){ageBoost+=m.ageIdx.young;ageCount++;}
+        else if(a.includes('25')){ageBoost+=m.ageIdx.young*0.6+m.ageIdx.mid*0.4;ageCount++;}
+        else if(a.includes('35')){ageBoost+=m.ageIdx.mid;ageCount++;}
+        else if(a.includes('45')){ageBoost+=m.ageIdx.mid*0.4+m.ageIdx.older*0.6;ageCount++;}
+        else if(a.includes('55')){ageBoost+=m.ageIdx.older;ageCount++;}
+      });
+    }
+    if(ageCount>0)score*=(ageBoost/ageCount);
+    if(gender==='konur')score*=m.genderIdx.f;
+    else if(gender==='karlar')score*=m.genderIdx.m;
+    if(region.includes('Reykjavík'))score*=m.regionIdx.rvk;
+    else if(region.includes('landsbyggð'))score*=m.regionIdx.land;
+    if(gr.tags.some(t=>m.tags.includes(t)))score*=gr.mult;
+    if(gr.types.includes(m.type))score*=1.2;
+    if(indTags.some(t=>m.tags.includes(t)))score*=1.25;
+    if(client.income==='hærri'&&m.tags.includes('business'))score*=1.3;
+    if(client.income==='lægri'&&m.tags.includes('broad'))score*=1.1;
+    return{...m,score:Math.round(score)};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score);
+}
+
+function buildReasons(m,client,campaign){
+  const reasons=[];
+  const ages=(client.age||'all').split(', ');
+  reasons.push(`Nær til ${fmtk(m.reach)} (${m.pct}%) á viku`);
+  if(!ages.includes('all')&&!ages.includes('allir aldurshópar')){
+    if(ages.some(a=>a.includes('18')||a.includes('25'))&&m.ageIdx.young>1.1)reasons.push('Sterk dekkun meðal yngra fólks');
+    if(ages.some(a=>a.includes('35')||a.includes('45'))&&m.ageIdx.mid>1.1)reasons.push('Hentar vel 35–54 aldurshóp');
+    if(ages.some(a=>a.includes('55'))&&m.ageIdx.older>1.1)reasons.push('Góð dekkun meðal eldra fólks');
+  }
+  if(client.gender==='konur'&&m.genderIdx.f>1.2)reasons.push('Konur nota þennan miðil meira');
+  if(client.gender==='karlar'&&m.genderIdx.m>1.2)reasons.push('Karlar nota þennan miðil meira');
+  if((client.region||'').includes('landsbyggð')&&m.regionIdx.land>1.1)reasons.push('Sérstaklega sterk á landsbyggðinni');
+  if((client.region||'').includes('Reykjavík')&&m.regionIdx.rvk>1.1)reasons.push('Sterk í Reykjavík og nágrenni');
+  return reasons.slice(0,2).join(' · ');
+}
+</script>
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  if(btn)btn.classList.add('active');
+  else document.getElementById('nav-'+id)?.classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════
+// PAGE BUILDERS — GÖGN
+// ════════════════════════════════════════════════════════
+function buildYfirlit(){
+  const clients=window._clients||[];
+  const camps=window._camps||[];
+  document.getElementById('ov-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Stærsti vefur</div><div class="mc-val">220k</div><div class="mc-sub">mbl.is · 83%</div></div>
+    <div class="mc"><div class="mc-lbl">Bylgjan vikudekkun</div><div class="mc-val" style="color:var(--ac3)">120k</div><div class="mc-sub">45% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">Facebook notkun</div><div class="mc-val" style="color:#1877F2">95%</div><div class="mc-sub">Prósent mars 2026</div></div>
+    <div class="mc"><div class="mc-lbl">Viðskiptavinir</div><div class="mc-val" style="color:var(--ac4)">${clients.length}</div><div class="mc-sub">í kerfinu</div></div>
+    <div class="mc"><div class="mc-lbl">Herferðir</div><div class="mc-val" style="color:var(--grn)">${camps.length}</div><div class="mc-sub">búnar til</div></div>
+    <div class="mc"><div class="mc-lbl">Morgunblaðið</div><div class="mc-val" style="color:var(--ac2)">38,1%</div><div class="mc-sub">89.800 lesendur</div></div>
+  `;
+  // Chart
+  const top=[
+    {label:'mbl.is',v:220580,c:'#c8f060'},{label:'visir.is',v:215255,c:'#60d0f0'},
+    {label:'Facebook',v:190000,c:'#1877F2'},{label:'Instagram',v:150000,c:'#E1306C'},
+    {label:'dv.is',v:107254,c:'#f0a060'},{label:'Rás 2',v:122558,c:'#60d0a0'},
+    {label:'Bylgjan',v:120289,c:'#f08040'},{label:'YouTube',v:100000,c:'#FF0000'},
+    {label:'Morgunblaðið',v:89800,c:'#d060f0'},{label:'RÚV TV',v:90320,c:'#80c0f0'},
+  ];
+  mkChart('ov-chart',{type:'bar',data:{labels:top.map(x=>x.label),datasets:[{data:top.map(x=>x.v),backgroundColor:top.map(x=>x.c+'55'),borderColor:top.map(x=>x.c),borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:TICK,grid:{display:false}},y:{ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}}}}});
+
+  // Recent camps
+  const el=document.getElementById('ov-camps');
+  if(!camps.length){el.innerHTML='<span style="color:var(--t3)">Engar herferðir enn</span>';return;}
+  el.innerHTML=[...camps].reverse().slice(0,6).map(camp=>{
+    const cl=clients.find(x=>x.id===camp.client_id);
+    return`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px">
+      <span style="font-weight:500;cursor:pointer;color:var(--t1)" onclick="openClient(${camp.client_id})">${cl?.name||'—'}</span>
+      <span style="color:var(--t3);font-family:var(--fm);font-size:10px">${(camp.goal||'').split('—')[0].trim()} · ${camp.created_at?.slice(0,10)||''}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildVefir(){
+  const latest=WEB_DATA.sites.map(s=>s.users[s.users.length-1]);
+  document.getElementById('web-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">mbl.is — V10</div><div class="mc-val">${fmtk(latest[0])}</div><div class="mc-sub">83% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">visir.is — V10</div><div class="mc-val" style="color:var(--ac2)">${fmtk(latest[1])}</div><div class="mc-sub">81% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">dv.is — V10</div><div class="mc-val" style="color:var(--ac3)">${fmtk(latest[2])}</div><div class="mc-sub">40% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">ruv.is — V10</div><div class="mc-val" style="color:var(--ac4)">${fmtk(latest[3])}</div><div class="mc-sub">29% af þjóð</div></div>
+  `;
+  mkChart('web-trend',{type:'line',data:{labels:WEB_DATA.labels,datasets:WEB_DATA.sites.map(s=>({label:s.name,data:s.users,borderColor:s.col,backgroundColor:'transparent',tension:.3,pointRadius:2,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a9b9f',font:{size:9}}}},scales:{x:{ticks:TICK,grid:{color:GRID}},y:{ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}}}}});
+  const mx=Math.max(...latest);
+  document.getElementById('web-table').innerHTML=`<table class="data-tbl"><thead><tr><th>Vefsíða</th><th>Notendur/viku</th><th>% af þjóð</th></tr></thead><tbody>`+
+    WEB_DATA.sites.map((s,i)=>`<tr><td style="color:${s.col}">${s.name}</td><td>${fmt(latest[i])} <span style="display:inline-block;width:${Math.round(latest[i]/mx*60)}px;height:4px;background:${s.col};border-radius:2px;vertical-align:middle;margin-left:4px"></span></td><td>${Math.round(latest[i]/POP*100)}%</td></tr>`).join('')+
+    `</tbody></table>`;
+  document.getElementById('web-insight').innerHTML='<strong>Lykilniðurstaða:</strong> mbl.is og visir.is ná til yfir 80% þjóðarinnar á viku — þetta eru tveir stærstu og breiðustu miðlar á Íslandi. dv.is er sterkastur meðal yngra fólks og lífsstaðartengt efni.';
+}
+
+function buildUtvarp(){
+  const last=RADIO_DATA.stations.map(s=>s.weekly[s.weekly.length-1]);
+  document.getElementById('radio-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Rás 2</div><div class="mc-val">${fmtk(last[0])}</div><div class="mc-sub">46% af þjóð · 142 mín/viku</div></div>
+    <div class="mc"><div class="mc-lbl">Bylgjan</div><div class="mc-val" style="color:var(--ac3)">${fmtk(last[1])}</div><div class="mc-sub">45% af þjóð · 184 mín/viku</div></div>
+    <div class="mc"><div class="mc-lbl">Rás 1 (RÚV)</div><div class="mc-val" style="color:var(--ac2)">${fmtk(last[2])}</div><div class="mc-sub">22% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">K100</div><div class="mc-val" style="color:var(--ac4)">${fmtk(last[3])}</div><div class="mc-sub">17% · 18–34 ára</div></div>
+  `;
+  mkChart('radio-trend',{type:'line',data:{labels:RADIO_DATA.weeks,datasets:RADIO_DATA.stations.map(s=>({label:s.name,data:s.weekly,borderColor:s.col,backgroundColor:'transparent',tension:.3,pointRadius:3,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a9b9f',font:{size:9}}}},scales:{x:{ticks:TICK,grid:{color:GRID}},y:{ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}}}}});
+  document.getElementById('radio-table').innerHTML=`<table class="data-tbl"><thead><tr><th>Stöð</th><th>Vikudekkun</th><th>Mín/mann</th><th>Hlutdeild</th></tr></thead><tbody>`+
+    RADIO_DATA.stations.map((s,i)=>`<tr><td style="color:${s.col}">${s.name}</td><td>${fmt(last[i])}</td><td>${s.mins}</td><td>${s.shareV06}%</td></tr>`).join('')+`</tbody></table>`;
+  document.getElementById('radio-insight').innerHTML='<strong>Bylgjan</strong> hefur hæstu hlustunarmínútur per mann (184 mín/viku) sem þýðir að hlustendur eru mjög trúfastir. <strong>Rás 2</strong> er stærst í dekkun. <strong>K100 og FM957</strong> ná sérstaklega til 18–34 ára.';
+}
+
+function buildSjonvarp(){
+  const progs=TV_DATA.programs;
+  document.getElementById('tv-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">RÚV — Kveikur</div><div class="mc-val">${fmtk(progs[0].reach)}</div><div class="mc-sub">34% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">EM handbolta (tipp)</div><div class="mc-val" style="color:var(--red)">${fmtk(progs[5].reach)}</div><div class="mc-sub">67% af þjóð · V05</div></div>
+    <div class="mc"><div class="mc-lbl">RÚV — Fréttir</div><div class="mc-val" style="color:var(--ac2)">${fmtk(progs[1].reach)}</div><div class="mc-sub">27% af þjóð</div></div>
+    <div class="mc"><div class="mc-lbl">Vikan m. Gísla</div><div class="mc-val" style="color:var(--ac3)">${fmtk(progs[2].reach)}</div><div class="mc-sub">27% af þjóð</div></div>
+  `;
+  const labels=progs.map(p=>p.prog.length>22?p.prog.slice(0,22)+'…':p.prog);
+  mkChart('tv-chart',{type:'bar',data:{labels,datasets:[{label:'Meðaláhorf',data:progs.map(p=>p.avgView),backgroundColor:progs.map(p=>p.col+'55'),borderColor:progs.map(p=>p.col),borderWidth:1,borderRadius:3,indexAxis:'y'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}},y:{ticks:TICK,grid:{display:false}}}}});
+  document.getElementById('tv-insight').innerHTML='RÚV er eini sjónvarpsrásinn með mæld gögn á Íslandi. <strong>EM handbolta</strong> náði 67% þjóðarinnar — einstakt tækifæri fyrir auglýsendur. Kveikur er sterkastur í venjulegu dagskrá (34%).';
+}
+
+function buildPrentmidlar(){
+  document.getElementById('print-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Morgunblaðið — vikudekkun</div><div class="mc-val">38,1%</div><div class="mc-sub">89.800 vikulegir lesendur</div></div>
+    <div class="mc"><div class="mc-lbl">Meðallestur feb 2026</div><div class="mc-val" style="color:var(--ac2)">48.800</div><div class="mc-sub">▲ +1.500 frá jan</div></div>
+    <div class="mc"><div class="mc-lbl">Viðskiptablaðið feb</div><div class="mc-val" style="color:var(--ac3)">17.100</div><div class="mc-sub">▼ −800 frá jan</div></div>
+    <div class="mc"><div class="mc-lbl">Vikudekkun breyting</div><div class="mc-val" style="color:var(--grn)">▲ +1.900</div><div class="mc-sub">lesendur frá fyrri mælingu</div></div>
+  `;
+  const months=PRINT_DATA.morgunbladid.monthly;
+  mkChart('print-trend',{type:'bar',data:{labels:months.map(m=>m.m),datasets:[{label:'Meðallestur',data:months.map(m=>m.readers),backgroundColor:['#d060f044','#d060f0aa'],borderColor:['#d060f088','#d060f0'],borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:TICK,grid:{display:false}},y:{min:44000,ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}}}}});
+  mkChart('print-bar',{type:'bar',data:{labels:['Morgunblaðið\n(meðallestur)','Morgunblaðið\n(vikulegir)','Viðskiptablaðið\n(meðallestur)'],datasets:[{data:[48800,89800,17100],backgroundColor:['#d060f055','#d060f033','#f0a06055'],borderColor:['#d060f0','#d060f088','#f0a060'],borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:TICK,grid:{display:false}},y:{ticks:{...TICK,callback:v=>fmtk(v)},grid:{color:GRID}}}}});
+  document.getElementById('print-insight').innerHTML='<strong>Morgunblaðið</strong> er í vexti — meðallestur hækkaði um 1.500 milli jan og feb 2026. <strong>Viðskiptablaðið</strong> er í lítilli lækkun (−800) en er áfram eini viðskiptamiðillinn og hentar vel fyrir B2B herferðir.';
+}
+
+function buildSocial(){
+  const plats=PROSENT.social.platforms;
+  document.getElementById('social-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Facebook</div><div class="mc-val" style="color:#1877F2">95%</div><div class="mc-sub">breiðastur allra</div></div>
+    <div class="mc"><div class="mc-lbl">Instagram</div><div class="mc-val" style="color:#E1306C">72%</div><div class="mc-sub">konur 81% · karlar 55%</div></div>
+    <div class="mc"><div class="mc-lbl">Snapchat</div><div class="mc-val" style="color:#c8b800">61%</div><div class="mc-sub">18–24: 90%</div></div>
+    <div class="mc"><div class="mc-lbl">TikTok</div><div class="mc-val" style="color:#69C9D0">31%</div><div class="mc-sub">18–24: 73%</div></div>
+  `;
+  const tr=PROSENT.social.trend;
+  const active=['Facebook','Instagram','TikTok','Snapchat','YouTube'];
+  const cols={Facebook:'#1877F2',Instagram:'#E1306C',TikTok:'#69C9D0',Snapchat:'#c8b800',YouTube:'#FF0000'};
+  mkChart('social-trend',{type:'line',data:{labels:tr.labels,datasets:active.map(p=>({label:p,data:tr.series[p],borderColor:cols[p],backgroundColor:'transparent',tension:.3,pointRadius:2,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a9b9f',font:{size:9}}}},scales:{x:{ticks:TICK,grid:{color:GRID}},y:{ticks:{...TICK,callback:v=>v+'%'},grid:{color:GRID}}}}});
+  mkChart('social-gender',{type:'bar',data:{labels:plats.map(p=>p.name),datasets:[{label:'Karlar',data:plats.map(p=>p.male),backgroundColor:'rgba(96,160,240,.4)',borderColor:'#60a0f0',borderWidth:1,borderRadius:3},{label:'Konur',data:plats.map(p=>p.female),backgroundColor:'rgba(225,48,108,.4)',borderColor:'#E1306C',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a9b9f',font:{size:9}}}},scales:{x:{ticks:TICK,grid:{display:false}},y:{ticks:{...TICK,callback:v=>v+'%'},grid:{color:GRID}}}}});
+  document.getElementById('social-insight').innerHTML='<strong>Facebook</strong> er langbreiðastur (95%) og hentar öllum aldurshópum. <strong>Instagram</strong> er sterkastur meðal kvenna (81%) og 18–34 ára. <strong>TikTok</strong> er hratt vaxandi meðal 18–24 ára (73%). <strong>LinkedIn</strong> (13%) er B2B miðillinn.';
+}
+
+function buildHladvorpur(){
+  const pod=PROSENT.podcasts;
+  document.getElementById('pod-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Hlusta mánaðarlega</div><div class="mc-val">43%</div><div class="mc-sub">Íslendingar 18–80 ára</div></div>
+    <div class="mc"><div class="mc-lbl">25–34 ára</div><div class="mc-val" style="color:var(--ac2)">61%</div><div class="mc-sub">hæst allra aldurshópa</div></div>
+    <div class="mc"><div class="mc-lbl">Konur hlusta</div><div class="mc-val" style="color:#E1306C">46%</div><div class="mc-sub">vs karlar 40%</div></div>
+    <div class="mc"><div class="mc-lbl">Í ljósi sögunnar</div><div class="mc-val" style="color:var(--ac3)">44%</div><div class="mc-sub">hlutdeild meðal hlustenda</div></div>
+  `;
+  const mxF=pod.female[0].pct;
+  document.getElementById('pod-female').innerHTML=pod.female.map((x,i)=>`
+    <div class="srow"><span class="snum">${i+1}</span>
+    <span class="sname">${x.name}</span>
+    <div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mxF*100)}%;background:#E1306C"></div></div>
+    <span class="sval">${x.pct}%</span></div>`).join('');
+  const mxM=pod.male[0].pct;
+  document.getElementById('pod-male').innerHTML=pod.male.map((x,i)=>`
+    <div class="srow"><span class="snum">${i+1}</span>
+    <span class="sname">${x.name}</span>
+    <div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mxM*100)}%;background:#60a0f0"></div></div>
+    <span class="sval">${x.pct}%</span></div>`).join('');
+  document.getElementById('pod-insight').innerHTML='43% Íslendinga hlusta á hlaðvörp mánaðarlega — þetta er hæsta hlutfall í Evrópu. <strong>25–34 ára er virkastur hópur (61%)</strong>. Konur hlusta mest á lífsstaðar- og glæfrapódcast, karlar mest á íþróttir og fréttir.';
+}
+
+let infAgeActive='18-24';
+function buildAhrifavaldar(){
+  const inf=PROSENT.influencers;
+  document.getElementById('inf-metrics').innerHTML=`
+    <div class="mc mc-ac"><div class="mc-lbl">Þekkja íslenski áhrifavaldar</div><div class="mc-val">${inf.overall.awarePct}%</div><div class="mc-sub">meðvitund</div></div>
+    <div class="mc"><div class="mc-lbl">Fylgjast með</div><div class="mc-val" style="color:var(--grn)">${inf.overall.followsPct}%</div><div class="mc-sub">a.m.k. einum</div></div>
+    <div class="mc"><div class="mc-lbl">Treysta tilmælum</div><div class="mc-val" style="color:var(--ac3)">${inf.overall.trustsPct}%</div><div class="mc-sub">viðkomandi</div></div>
+    <div class="mc"><div class="mc-lbl">Hafa keypt vegna</div><div class="mc-val" style="color:var(--ac2)">${inf.overall.hasBoughtPct}%</div><div class="mc-sub">áhrifavalda</div></div>
+    <div class="mc"><div class="mc-lbl">Konur fylgjast með</div><div class="mc-val" style="color:#E1306C">49%</div><div class="mc-sub">vs karlar 35%</div></div>
+    <div class="mc"><div class="mc-lbl">18–24 ára — meðvitund</div><div class="mc-val">92%</div><div class="mc-sub">hæst allra aldurshópa</div></div>
+  `;
+  const mx=inf.top20[0].pct;
+  document.getElementById('inf-overall').innerHTML=inf.top20.map((x,i)=>`
+    <div class="srow"><span class="snum">${i+1}</span>
+    <span class="sname" style="color:${x.col}">${x.name}</span>
+    <div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mx*100)}%;background:${x.col}"></div></div>
+    <span class="sval">${x.pct}%</span></div>`).join('');
+  const ages=Object.keys(inf.byAge);
+  mkChart('inf-age-chart',{type:'bar',data:{labels:ages,datasets:[
+    {label:'Þekkja',data:ages.map(a=>inf.byAge[a].aware),backgroundColor:'rgba(200,240,96,.25)',borderColor:'#c8f060',borderWidth:1,borderRadius:2},
+    {label:'Fylgjast með',data:ages.map(a=>inf.byAge[a].follows),backgroundColor:'rgba(96,240,160,.25)',borderColor:'#60f0a0',borderWidth:1,borderRadius:2},
+    {label:'Treysta',data:ages.map(a=>inf.byAge[a].trusts),backgroundColor:'rgba(240,160,96,.25)',borderColor:'#f0a060',borderWidth:1,borderRadius:2},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a9b9f',font:{size:9}}}},scales:{x:{ticks:TICK,grid:{display:false}},y:{ticks:{...TICK,callback:v=>v+'%'},grid:{color:GRID}}}}});
+  mkChart('inf-plat-chart',{type:'bar',data:{labels:inf.byPlatform.map(x=>x.platform),datasets:[{data:inf.byPlatform.map(x=>x.pct),backgroundColor:['#E1306C55','#69C9D055','#FF000055','#1877F255','#c8b80055','#f0606055'],borderColor:['#E1306C','#69C9D0','#FF0000','#1877F2','#c8b800','#f06060'],borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:TICK,grid:{display:false}},y:{ticks:{...TICK,callback:v=>v+'%'},grid:{color:GRID}}}}});
+  const mxF=inf.byGenderTop.female[0].pct, mxM=inf.byGenderTop.male[0].pct;
+  document.getElementById('inf-female').innerHTML=inf.byGenderTop.female.map((x,i)=>`<div class="srow"><span class="snum">${i+1}</span><span class="sname" style="color:${x.col};font-size:11px">${x.name}</span><div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mxF*100)}%;background:${x.col}"></div></div><span class="sval">${x.pct}%</span></div>`).join('');
+  document.getElementById('inf-male').innerHTML=inf.byGenderTop.male.map((x,i)=>`<div class="srow"><span class="snum">${i+1}</span><span class="sname" style="color:${x.col};font-size:11px">${x.name}</span><div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mxM*100)}%;background:${x.col}"></div></div><span class="sval">${x.pct}%</span></div>`).join('');
+  const ageKeys=Object.keys(inf.byAgeTop);
+  document.getElementById('inf-age-tabs').innerHTML=ageKeys.map(a=>`<button class="tabbtn ${a===infAgeActive?'active':''}" onclick="setInfAge('${a}',this)">${a} ára</button>`).join('');
+  buildInfAgeRank();
+}
+window.setInfAge=function(a,btn){infAgeActive=a;document.querySelectorAll('#inf-age-tabs .tabbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildInfAgeRank();};
+function buildInfAgeRank(){const list=PROSENT.influencers.byAgeTop[infAgeActive]||[];const mx=list[0]?.pct||1;document.getElementById('inf-age-rank').innerHTML=list.map((x,i)=>`<div class="srow"><span class="snum">${i+1}</span><span class="sname" style="color:${x.col}">${x.name}</span><div class="bwrap"><div class="bfill" style="width:${Math.round(x.pct/mx*100)}%;background:${x.col}"></div></div><span class="sval">${x.pct}%</span></div>`).join('');}
+
+// ════════════════════════════════════════════════════════
+// TÖLFRÆÐI
+// ════════════════════════════════════════════════════════
+function showTolf(tab,btn){
+  document.querySelectorAll('.page-tolfraedi .tabs .tabbtn, #page-tolfraedi .tabs .tabbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const el=document.getElementById('tolf-content');
+  const plats=PROSENT.social.platforms;
+  const ages=['18-24','25-34','35-44','45-54','55-64','65+'];
+
+  if(tab==='aldur'){
+    // Heatmap: platforms × age groups
+    const heat=plats.map(p=>({name:p.name,col:p.col,vals:ages.map(a=>p.byAge[a]||0)}));
+    el.innerHTML=`
+      <div class="card" style="overflow-x:auto">
+        <div class="stitle">Samfélagsmiðlar — notkun eftir aldri (%)</div>
+        <table class="heatmap">
+          <thead><tr><th>Miðill</th>${ages.map(a=>`<th>${a}</th>`).join('')}</tr></thead>
+          <tbody>${heat.map(p=>`<tr><td style="color:${p.col}">${p.name}</td>${p.vals.map(v=>`<td style="background:${heatColor(v)};color:${v>50?'#111':'var(--t1)'">${v}%</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:.75rem">
+        <div class="stitle">Hlaðvörp — hlustun eftir aldri</div>
+        <table class="data-tbl"><thead><tr><th>Aldurshópur</th><th>Hlusta mánaðarlega</th></tr></thead><tbody>
+        ${ages.map(a=>`<tr><td>${a} ára</td><td>${PROSENT.podcasts.byAge[a]||'—'}%</td></tr>`).join('')}
+        </tbody></table>
+      </div>`;
+  } else if(tab==='kyn'){
+    el.innerHTML=`
+      <div class="g2">
+        <div class="card">
+          <div class="stitle">Samfélagsmiðlar — kynjahlutfall (%)</div>
+          <table class="data-tbl"><thead><tr><th>Miðill</th><th>Karlar</th><th>Konur</th></tr></thead><tbody>
+          ${plats.map(p=>`<tr><td style="color:${p.col}">${p.name}</td><td>${p.male}%</td><td>${p.female}%</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        <div class="card">
+          <div class="stitle">Áhrifavaldar og hlaðvörp — kyn</div>
+          <table class="data-tbl"><thead><tr><th>Efni</th><th>Karlar</th><th>Konur</th></tr></thead><tbody>
+            <tr><td>Fylgjast með áhrifavaldara</td><td>35%</td><td>49%</td></tr>
+            <tr><td>Treysta tilmælum áhrifavalda</td><td>24%</td><td>34%</td></tr>
+            <tr><td>Hlusta á hlaðvörp</td><td>${PROSENT.podcasts.byGender.male}%</td><td>${PROSENT.podcasts.byGender.female}%</td></tr>
+            <tr><td>Dr. Football</td><td>34%</td><td>4%</td></tr>
+            <tr><td>Morðcastið</td><td>5%</td><td>28%</td></tr>
+          </tbody></table>
+        </div>
+      </div>`;
+  } else if(tab==='svaedi'){
+    el.innerHTML=`
+      <div class="card">
+        <div class="stitle">Miðlar eftir svæði — Reykjavík vs landsbyggðin</div>
+        <table class="data-tbl"><thead><tr><th>Miðill</th><th>Tegund</th><th>Reykjavík</th><th>Landsbyggðin</th></tr></thead><tbody>
+          <tr><td>mbl.is</td><td>Vefur</td><td>+10% yfir meðaltal</td><td>Meðaltal</td></tr>
+          <tr><td>Bylgjan</td><td>Útvarp</td><td>Meðaltal</td><td><strong style="color:var(--grn)">+30% yfir meðaltal</strong></td></tr>
+          <tr><td>Rás 1 (RÚV)</td><td>Útvarp</td><td>Meðaltal</td><td>+20% yfir meðaltal</td></tr>
+          <tr><td>Instagram</td><td>Samfélagsmiðlar</td><td>+10% yfir meðaltal</td><td>−10% undir meðaltal</td></tr>
+          <tr><td>LinkedIn</td><td>Samfélagsmiðlar</td><td><strong style="color:var(--ac)">+30% yfir meðaltal</strong></td><td>−30% undir meðaltal</td></tr>
+          <tr><td>Hlaðvörp</td><td>Hlaðvörp</td><td>${PROSENT.podcasts.byRegion.rvk}%</td><td>${PROSENT.podcasts.byRegion.land}%</td></tr>
+        </tbody></table>
+      </div>`;
+  } else if(tab==='tekjur'){
+    el.innerHTML=`
+      <div class="card">
+        <div class="stitle">Miðlar eftir tekjuhópi</div>
+        <table class="data-tbl"><thead><tr><th>Miðill</th><th>Lægri tekjur</th><th>Meðaltekjur</th><th>Hærri tekjur</th></tr></thead><tbody>
+          <tr><td>Facebook</td><td>93%</td><td>95%</td><td>96%</td></tr>
+          <tr><td>Instagram</td><td>68%</td><td>72%</td><td>76%</td></tr>
+          <tr><td>LinkedIn</td><td>6%</td><td>11%</td><td><strong style="color:var(--ac)">24%</strong></td></tr>
+          <tr><td>Morgunblaðið</td><td>28%</td><td>36%</td><td><strong style="color:var(--ac)">44%</strong></td></tr>
+          <tr><td>Viðskiptablaðið</td><td>3%</td><td>6%</td><td><strong style="color:var(--ac)">18%</strong></td></tr>
+          <tr><td>Rás 1 (RÚV)</td><td>16%</td><td>22%</td><td>28%</td></tr>
+          <tr><td>Hlaðvörp</td><td>${PROSENT.podcasts.byIncome.low}%</td><td>${PROSENT.podcasts.byIncome.mid}%</td><td>${PROSENT.podcasts.byIncome.high}%</td></tr>
+        </tbody></table>
+      </div>`;
+  } else if(tab==='menntun'){
+    el.innerHTML=`
+      <div class="card">
+        <div class="stitle">Miðlar eftir menntunarstig</div>
+        <table class="data-tbl"><thead><tr><th>Miðill</th><th>Grunnskóli</th><th>Framhaldsskóli</th><th>Háskóli</th></tr></thead><tbody>
+          <tr><td>Facebook</td><td>93%</td><td>95%</td><td>96%</td></tr>
+          <tr><td>Instagram</td><td>64%</td><td>72%</td><td>78%</td></tr>
+          <tr><td>LinkedIn</td><td>3%</td><td>8%</td><td><strong style="color:var(--ac)">26%</strong></td></tr>
+          <tr><td>Morgunblaðið</td><td>26%</td><td>35%</td><td><strong style="color:var(--ac)">48%</strong></td></tr>
+          <tr><td>Viðskiptablaðið</td><td>2%</td><td>5%</td><td><strong style="color:var(--ac)">21%</strong></td></tr>
+          <tr><td>Rás 1 (RÚV)</td><td>14%</td><td>20%</td><td><strong style="color:var(--ac)">32%</strong></td></tr>
+          <tr><td>TikTok</td><td>32%</td><td>31%</td><td>29%</td></tr>
+        </tbody></table>
+      </div>`;
+  }
+}
+function heatColor(v){
+  if(v>=80)return'rgba(200,240,96,.5)';
+  if(v>=60)return'rgba(200,240,96,.3)';
+  if(v>=40)return'rgba(200,240,96,.15)';
+  if(v>=20)return'rgba(200,240,96,.06)';
+  return'transparent';
+}
+
+// ════════════════════════════════════════════════════════
+// CLIENT SUPABASE CRUD
+// ════════════════════════════════════════════════════════
+async function loadClients(){
+  try{
+    const data=await sbFetch('/rest/v1/clients?select=*&order=created_at.asc');
+    window._clients=data||[];
+  }catch(e){console.error('loadClients:',e);window._clients=[];}
+}
+async function loadCamps(){
+  try{
+    const data=await sbFetch('/rest/v1/campaigns?select=*&order=created_at.desc');
+    window._camps=data||[];
+  }catch(e){console.error('loadCamps:',e);window._camps=[];}
+}
+
+const COLORS=['#c8f060','#60d0f0','#f0a060','#d060f0','#60f0a0','#f06060','#60a0f0','#f0d060','#a060f0','#f0a0c0'];
+const initials=n=>(n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const clientColor=id=>{const i=(window._clients||[]).findIndex(c=>c.id===id);return COLORS[((i%COLORS.length)+COLORS.length)%COLORS.length]||'#888';};
+
+let currentClientId=null;
+let editClientId=null;
+
+function buildSidebar(filter=''){
+  const clients=(window._clients||[]).filter(c=>!filter||c.name.toLowerCase().includes(filter.toLowerCase())||(c.industry||'').toLowerCase().includes(filter.toLowerCase()));
+  const el=document.getElementById('clist');
+  if(!clients.length){el.innerHTML=`<div style="font-size:11px;color:var(--t3);padding:7px 10px">${filter?'Engir fundust':'Engir viðskiptavinir'}</div>`;return;}
+  el.innerHTML=clients.map(c=>`<div class="c-item ${c.id===currentClientId?'active':''}" onclick="openClient(${c.id})"><div class="c-av" style="background:${clientColor(c.id)}">${initials(c.name)}</div><div class="c-inf"><div class="c-nm">${c.name}</div><div class="c-mt">${c.industry||'—'}</div></div></div>`).join('');
+}
+window.filterClients=v=>buildSidebar(v);
+
+function openClient(id){
+  currentClientId=id;
+  buildSidebar(document.getElementById('csearch').value);
+  const c=(window._clients||[]).find(x=>x.id===id);
+  if(!c)return;
+  const camps=(window._camps||[]).filter(x=>x.client_id===id);
+  const col=clientColor(id);
+  const ageStr=c.age&&c.age!=='all'?c.age.split(', ').map(a=>`<span class="ctag">${a}</span>`).join(''):'<span class="ctag">Allir aldurshópar</span>';
+
+  document.getElementById('client-content').innerHTML=`
+    <div style="padding:2rem 2.5rem">
+      <div class="c-header">
+        <div class="c-avatar-lg" style="background:${col}">${initials(c.name)}</div>
+        <div class="c-title">
+          <h1>${c.name}</h1>
+          <p>${c.industry||''} ${c.region?'· '+c.region:''}</p>
+          <div class="c-tags">${ageStr}${c.gender?`<span class="ctag">${c.gender}</span>`:''}${c.income&&c.income!=='allir'?`<span class="ctag">${c.income}</span>`:''}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:7px;flex-shrink:0">
+          <button class="btn btn-s" onclick="openClientModal(${id})">✎ Breyta</button>
+          <button class="btn btn-d" onclick="deleteClient(${id})">Eyða</button>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="ic"><div class="ic-lbl">Iðnaðarflokkur</div><div class="ic-val">${c.industry||'—'}</div></div>
+        <div class="ic"><div class="ic-lbl">Aldur markhóps</div><div class="ic-val">${c.age&&c.age!=='all'?c.age:'Allir'}</div></div>
+        <div class="ic"><div class="ic-lbl">Kyn</div><div class="ic-val">${c.gender||'Bæði kyn'}</div></div>
+        <div class="ic"><div class="ic-lbl">Svæði</div><div class="ic-val">${c.region||'Allt landið'}</div></div>
+        <div class="ic"><div class="ic-lbl">Tekjuhópur</div><div class="ic-val">${c.income==='allir'||!c.income?'Allir':c.income}</div></div>
+        <div class="ic"><div class="ic-lbl">Herferðir</div><div class="ic-val">${camps.length}</div></div>
+      </div>
+      ${c.description?`<div class="card" style="margin-bottom:.75rem"><div class="stitle">Um fyrirtækið</div><p style="font-size:13px;color:var(--t2);line-height:1.7">${c.description}</p></div>`:''}
+      ${c.competitors?`<div class="card" style="margin-bottom:.75rem"><div class="stitle">Keppinautar</div><p style="font-size:13px;color:var(--t2)">${c.competitors}</p></div>`:''}
+
+      <div class="card" style="background:rgba(200,240,96,.03);border-color:rgba(200,240,96,.18)">
+        <div class="stitle" style="color:var(--ac)">Búa til miðlaáætlun</div>
+        <div class="g2">
+          <div class="fg"><label>Markmið herferðar</label>
+            <select id="pg-${id}">
+              <option value="breið dekkun og vörumerkjavitund">Breið dekkun — vörumerkjavitund</option>
+              <option value="söluaukning og bein viðbrögð">Söluaukning — bein viðbrögð</option>
+              <option value="stafræn herferð — samfélagsmiðlar">Stafræn herferð</option>
+              <option value="B2B — viðskiptamarkhópur">B2B — viðskiptamarkhópur</option>
+              <option value="staðbundin herferð">Staðbundin herferð</option>
+            </select>
+          </div>
+          <div class="fg"><label>Fjárhagsáætlun</label>
+            <select id="pb-${id}">
+              <option value="1">Lítil — topp 3 miðlar</option>
+              <option value="2" selected>Meðal — topp 5 miðlar</option>
+              <option value="3">Stór — topp 8 miðlar</option>
+              <option value="4">Full — topp 12 miðlar</option>
+            </select>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="fg"><label>Tímabil (valkvæmt)</label><input type="text" id="pp-${id}" placeholder="t.d. Maí–Júní 2026"></div>
+          <div class="fg"><label>Sérstakt (valkvæmt)</label><input type="text" id="pn-${id}" placeholder="t.d. jólasala..."></div>
+        </div>
+        <div class="fg"><label>Tegund miðla</label>
+          <div style="display:flex;gap:8px;margin-top:2px">
+            <label class="cb-label"><input type="checkbox" id="pi-${id}" checked> <span>📺 Innlendir miðlar</span></label>
+            <label class="cb-label"><input type="checkbox" id="ps-${id}" checked> <span>📱 Samfélagsmiðlar</span></label>
+          </div>
+        </div>
+        <div class="fg"><label>Velja miðla sérstaklega (valkvæmt — að hámarki 15)</label>
+          <div id="plats-${id}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:2px;padding:7px;max-height:160px;overflow-y:auto;background:var(--s2);border-radius:8px;border:1px solid var(--bd2)"></div>
+        </div>
+        <button class="btn-gen" onclick="runPlan(${id})">✦ Búa til miðlaáætlun — ${c.name}</button>
+      </div>
+
+      ${camps.length?`<div style="margin-top:1rem">
+        <div class="stitle" style="margin-bottom:.4rem">Vistaðar herferðir (${camps.length})</div>
+        <div class="camp-list">${camps.map(camp=>`
+          <div class="camp-item">
+            <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div>
+            <div style="flex:1"><div style="font-size:12.5px;font-weight:500">${camp.goal||'Miðlaáætlun'}</div>
+            <div style="font-size:10px;color:var(--t3);font-family:var(--fm)">${camp.budget_label||''} · ${camp.period||''} · ${camp.created_at?.slice(0,10)||''}</div></div>
+            <button class="btn btn-d" style="padding:3px 7px;font-size:10px" onclick="deleteCamp(${camp.id},${id})">✕</button>
+          </div>`).join('')}
+        </div></div>`:''}
+    </div>
+    <div id="result-${id}" style="display:none;padding:0 2.5rem 2.5rem"></div>
+  `;
+  buildPlatList(id);
+  showPage('client');
+}
+
+function buildPlatList(id){
+  const el=document.getElementById('plats-'+id);
+  if(!el)return;
+  el.innerHTML=MEDIA.map(m=>`<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer;padding:2px 5px;border-radius:4px"><input type="checkbox" value="${m.name}" class="plat-${id}" style="accent-color:var(--ac)" onchange="(function(cb){if(document.querySelectorAll('.plat-${id}:checked').length>15){cb.checked=false;alert('Hámark 15');}})(this)"><span style="color:${m.col}">●</span>${m.name}</label>`).join('');
+}
+
+function runPlan(id){
+  const c=(window._clients||[]).find(x=>x.id===id);
+  if(!c)return;
+  const goal=document.getElementById('pg-'+id)?.value||'breið dekkun og vörumerkjavitund';
+  const budgetN=parseInt(document.getElementById('pb-'+id)?.value||'2');
+  const period=document.getElementById('pp-'+id)?.value||'';
+  const notes=document.getElementById('pn-'+id)?.value||'';
+  const useInn=document.getElementById('pi-'+id)?.checked!==false;
+  const useSoc=document.getElementById('ps-'+id)?.checked!==false;
+  const selPlats=Array.from(document.querySelectorAll('.plat-'+id+':checked')).map(cb=>cb.value);
+  const topN=[3,5,8,12][budgetN-1]||5;
+  const budget_label=['Lítil — topp 3','Meðal — topp 5','Stór — topp 8','Full — topp 12'][budgetN-1];
+
+  const scored=scoreMedia(c,{goal,useInn,useSoc,selPlats});
+  const top=scored.slice(0,topN);
+  if(!top.length){alert('Engir miðlar fundust — víkkaðu valið');return;}
+
+  const totalRaw=top.reduce((a,m)=>a+m.reach,0);
+  const estReach=Math.min(POP*0.95,Math.round(totalRaw*(1-Math.min(0.5,0.08*top.length))));
+  const estPct=Math.round(estReach/POP*100);
+  const maxR=top[0].reach;
+  const prioLabel=i=>i===0?`<span class="pbadge pb1">Forgangur 1</span>`:i<2?`<span class="pbadge pb2">Forgangur 2</span>`:i<4?`<span class="pbadge pb3">Mælt með</span>`:`<span class="pbadge pb4">Viðbót</span>`;
+
+  const ageStr=c.age&&c.age!=='all'?c.age:'allir aldurshópar';
+  let summary=`Miðlaáætlun fyrir <strong>${c.name}</strong> miðar að <strong>${ageStr}</strong>`;
+  if(c.gender&&c.gender!=='bæði kyn')summary+=`, <strong>${c.gender}</strong>`;
+  if(c.region&&c.region!=='allt landið')summary+=` á <strong>${c.region}</strong>`;
+  summary+=`. Markmið: <em>${goal}</em>. Helstu miðlar: <strong>${top.slice(0,3).map(m=>m.name).join(', ')}</strong>. Áætluð dekkun <strong>${fmtk(estReach)} einstaklingar (${estPct}%)</strong> af þjóðinni á viku.`;
+
+  const resEl=document.getElementById('result-'+id);
+  resEl.style.display='block';
+  resEl.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;flex-wrap:wrap;gap:8px">
+      <h2 style="font-size:16px;font-weight:700">Miðlaáætlun — ${c.name}</h2>
+      <div class="btn-row">
+        <button class="btn btn-s" style="font-size:11px" onclick="window.print()">🖨 Prenta / PDF</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="saveCamp(${id},'${goal.replace(/'/g,"\\'")}','${budget_label}','${period}','${notes}')">💾 Vista herferð</button>
+        <button class="btn btn-s" style="font-size:11px" onclick="document.getElementById('result-${id}').style.display='none'">✕</button>
+      </div>
+    </div>
+    <div class="rt-row">
+      <div class="rt-card"><div class="rt-val" style="color:var(--ac)">${fmtk(estReach)}</div><div class="rt-lbl">Áætluð dekkun/viku</div></div>
+      <div class="rt-card"><div class="rt-val" style="color:var(--ac2)">${estPct}%</div><div class="rt-lbl">Af þjóðinni</div></div>
+      <div class="rt-card"><div class="rt-val" style="color:var(--ac3)">${top.length}</div><div class="rt-lbl">Miðlar valdir</div></div>
+      ${period?`<div class="rt-card"><div class="rt-val" style="font-size:14px;color:var(--ac4)">${period}</div><div class="rt-lbl">Tímabil</div></div>`:''}
+    </div>
+    <div class="summary-box"><h3>Stefna og samantekt</h3><p>${summary}</p></div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:.75rem">
+      <table class="media-tbl">
+        <thead><tr><th>#</th><th>Miðill</th><th>Vikudekkun</th><th>Forgangur</th><th>Rökstuðningur</th></tr></thead>
+        <tbody>${top.map((m,i)=>`<tr>
+          <td style="font-family:var(--fm);color:var(--t3);font-size:11px">${i+1}</td>
+          <td><div style="font-weight:500;color:${m.col}">${m.name}</div><div style="font-size:10px;color:var(--t3)">${m.type}</div></td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="reach-bar-bg"><div class="reach-bar-fg" style="width:${Math.round(m.reach/maxR*100)}%;background:${m.col}"></div></div><span style="font-family:var(--fm);font-size:11px;color:var(--t2)">${fmtk(m.reach)} · ${m.pct}%</span></div></td>
+          <td>${prioLabel(i)}</td>
+          <td style="font-size:11px;color:var(--t2)">${buildReasons(m,c,{goal,useInn,useSoc,selPlats})}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    ${notes?`<div class="card"><div class="stitle">Sérstakt</div><p style="font-size:13px;color:var(--t2)">${notes}</p></div>`:''}
+    <p style="font-size:11px;color:var(--t3);margin-top:.5rem">Gallup + Prósent gögn, mars 2026. Áætluð dekkun tekur tillit til skörunar.</p>
+  `;
+  resEl.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function saveCamp(clientId,goal,budget_label,period,notes){
+  try{
+    await sbFetch('/rest/v1/campaigns',{
+      method:'POST',prefer:'return=minimal',
+      body:JSON.stringify({client_id:clientId,goal,budget_label,period,notes,use_inn:true,use_soc:true})
+    });
+    await loadCamps();
+    buildSidebar();
+    buildYfirlit();
+    alert('Herferð vistuð ✓');
+    openClient(clientId);
+  }catch(e){alert('Villa við vistun: '+e.message);}
+}
+
+async function deleteCamp(campId,clientId){
+  if(!confirm('Eyða herferð?'))return;
+  try{
+    await sbFetch(`/rest/v1/campaigns?id=eq.${campId}`,{method:'DELETE'});
+    await loadCamps();
+    openClient(clientId);
+  }catch(e){alert('Villa: '+e.message);}
+}
+
+// ════════════════════════════════════════════════════════
+// CLIENT MODAL
+// ════════════════════════════════════════════════════════
+function openClientModal(id=null){
+  editClientId=id;
+  document.getElementById('mc-title').textContent=id?'Breyta viðskiptavin':'Nýr viðskiptavinur';
+  document.getElementById('mc-save-btn').textContent=id?'Vista breytingar':'Vista';
+  document.getElementById('mc-err').style.display='none';
+  if(id){
+    const c=(window._clients||[]).find(x=>x.id===id);
+    if(c){
+      document.getElementById('mc-name').value=c.name||'';
+      document.getElementById('mc-ind').value=c.industry||'';
+      document.getElementById('mc-reg').value=c.region||'allt landið';
+      document.getElementById('mc-gen').value=c.gender||'bæði kyn';
+      document.getElementById('mc-inc').value=c.income||'allir';
+      document.getElementById('mc-desc').value=c.description||'';
+      document.getElementById('mc-comp').value=c.competitors||'';
+      const sa=(c.age||'').split(', ');
+      document.querySelectorAll('#mc-age input').forEach(cb=>cb.checked=sa.includes(cb.value));
+    }
+  } else {
+    ['mc-name','mc-desc','mc-comp'].forEach(i=>document.getElementById(i).value='');
+    ['mc-ind'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('mc-reg').value='allt landið';
+    document.getElementById('mc-gen').value='bæði kyn';
+    document.getElementById('mc-inc').value='allir';
+    document.querySelectorAll('#mc-age input').forEach(cb=>cb.checked=false);
+  }
+  document.getElementById('modal-client').classList.add('open');
+}
+function closeClientModal(){document.getElementById('modal-client').classList.remove('open');}
+
+async function saveClient(){
+  const name=document.getElementById('mc-name').value.trim();
+  const ind=document.getElementById('mc-ind').value;
+  const errEl=document.getElementById('mc-err');
+  if(!name){errEl.textContent='Nafn er skylda';errEl.style.display='block';return;}
+  if(!ind){errEl.textContent='Veldu iðnaðarflokk';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  const age=Array.from(document.querySelectorAll('#mc-age input:checked')).map(cb=>cb.value).join(', ')||'all';
+  const body={name,industry:ind,region:document.getElementById('mc-reg').value,gender:document.getElementById('mc-gen').value,income:document.getElementById('mc-inc').value,age,description:document.getElementById('mc-desc').value.trim(),competitors:document.getElementById('mc-comp').value.trim()};
+  try{
+    if(editClientId){
+      await sbFetch(`/rest/v1/clients?id=eq.${editClientId}`,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});
+    } else {
+      await sbFetch('/rest/v1/clients',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
+    }
+    await loadClients();
+    closeClientModal();
+    buildSidebar();
+    buildYfirlit();
+    if(editClientId) openClient(editClientId);
+    else openClient((window._clients||[]).slice(-1)[0]?.id);
+  }catch(e){errEl.textContent='Villa: '+e.message;errEl.style.display='block';}
+}
+
+async function deleteClient(id){
+  if(!confirm('Eyða þessum viðskiptavin og öllum herferðum?'))return;
+  try{
+    await sbFetch(`/rest/v1/campaigns?client_id=eq.${id}`,{method:'DELETE'});
+    await sbFetch(`/rest/v1/clients?id=eq.${id}`,{method:'DELETE'});
+    await loadClients();await loadCamps();
+    currentClientId=null;buildSidebar();buildYfirlit();showPage('yfirlit');
+  }catch(e){alert('Villa: '+e.message);}
+}
+
+document.getElementById('modal-client').addEventListener('click',e=>{if(e.target===document.getElementById('modal-client'))closeClientModal();});
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+async function initApp(){
+  window._clients=[];window._camps=[];
+  await Promise.all([loadClients(),loadCamps()]);
+  buildSidebar();
+  buildYfirlit();
+  buildVefir();
+  buildUtvarp();
+  buildSjonvarp();
+  buildPrentmidlar();
+  buildSocial();
+  buildHladvorpur();
+  buildAhrifavaldar();
+  showTolf('aldur',document.querySelector('#page-tolfraedi .tabbtn'));
+}
+
+// Check if already logged in
+window.addEventListener('DOMContentLoaded',()=>{
+  if(getToken()){showApp();}
+});
+</script>
+
+
+</body></html>
